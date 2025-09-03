@@ -325,4 +325,3 @@ void WebServer::eventLoop()
     std::cout<<std::endl<< "Server is shutting down..." << std::endl;
     LOG_INFO("Server is shutting down...");
 }
-

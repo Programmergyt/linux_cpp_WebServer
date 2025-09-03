@@ -1,6 +1,5 @@
 # Ignore build and executable files
 web_server
-web_server.exe
 
 # Ignore VS Code configuration files
 .vscode/

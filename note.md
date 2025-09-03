@@ -16,9 +16,13 @@ string databasename = "gytdb";
 改进点：重构timer和Utils，将Utils中大部分函数以及cb_func迁移至tools作为全局工具函数。原本用链表存储定时器，现在改为用multimap+unordered_map存储定时器，multimap底层用红黑树实现，可自动排序，插入也简单。
 改进点：增加线程池优雅退出逻辑，析构函数中有m_stop通知run函数退出，并调用pthread_timedjoin_np完成超时等待。将线程池与http_conn与sql_connect解耦，实现了更通用的线程池。
 
-待改进点：命令行参数输入，区分listenfd和connfd的Trigmode
-
-待改进点：做出完整的网站示例，能够发出各种请求。服务器处理时能调用数据库。
+待改进点：把代码随想录的异步日志系统缝合进来。
+待改进点：封装http_conn类中的某些方法
+待改进点：实现静态文件缓存（如内存缓存或 Redis 集成），减少磁盘 I/O。还是使用redis集成吧，redis适合集群部署。
+待改进点：改造为类似于 muduo 库 那样的主从 Reactor 架构 。
+待改进点：负载均衡和限流：添加请求限流（rate limiting）以防止 DDoS，使用 token bucket 算法；支持多服务器负载均衡的简单代理。
+待改进点：可变大小的读写缓冲区
+待改进点：超大文件的传输，并发上传,拆包，包验证，重发，组合
 
 请求示例
 POST /2CGISQL.html HTTP/1.1
