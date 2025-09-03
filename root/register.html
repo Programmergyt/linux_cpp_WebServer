@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>注册</title>
+</head>
+<body>
+  <h2>注册</h2>
+  <form id="registerForm">
+    用户名: <input type="text" name="username"><br>
+    密码: <input type="password" name="password"><br>
+    邮箱: <input type="email" name="email"><br>
+    <button type="submit">注册</button>
+  </form>
+
+  <!-- 显示返回结果 -->
+  <pre id="result" style="margin-top:10px; padding:10px; border:1px solid #ccc; background:#f9f9f9;"></pre>
+
+  <script>
+    document.getElementById("registerForm").addEventListener("submit", async function(e) {
+      e.preventDefault(); // 阻止默认跳转
+      const formData = new FormData(this);
+      const body = new URLSearchParams(formData);
+
+      try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body
+        });
+        const data = await res.json();
+        document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById("result").textContent = "请求失败: " + err;
+      }
+    });
+  </script>
+</body>
+</html>
