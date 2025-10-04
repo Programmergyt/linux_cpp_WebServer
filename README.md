@@ -1,5 +1,11 @@
 编写顺序
 lock->log->config->timer->CGImysql->threadpool->http->webserver
+编译并运行的命令
+chmod +x scripts/git_save.sh
+./scripts/build_and_run.sh
+./scripts/run.sh
+./scripts/pressure_test_run.sh
+./scripts/git_save.sh
 
 数据库
 string user = "root";
@@ -46,8 +52,11 @@ Content-Type: text/html
 The requested file was not found on this server.
 
 压力测试
+原始界面
 隔壁最高水平：QPS:6000,TPS:3.7MB
-本地最高水平：QPS6600，TPS：4.6MB
+本地最高水平：QPS:6600，TPS：4.6MB
+改进界面
+本地水平:QPS:4500,TPS:5.8MB
 
 常用指令
 wrk -t12 -c10500 -d5s http://192.168.72.128:8080/index.html

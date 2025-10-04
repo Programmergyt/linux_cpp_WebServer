@@ -1,8 +1,6 @@
-# Ignore build and executable files
-web_server
-
-# Ignore VS Code configuration files
 .vscode/
+
+.build/
 
 root/assets/
 

@@ -1,0 +1,4 @@
+/opt/my_cpp/build/CMakeFiles/web_server.dir
+/opt/my_cpp/build/CMakeFiles/test.dir
+/opt/my_cpp/build/CMakeFiles/edit_cache.dir
+/opt/my_cpp/build/CMakeFiles/rebuild_cache.dir
