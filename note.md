@@ -23,6 +23,7 @@ string databasename = "gytdb";
 待改进点：负载均衡和限流：添加请求限流（rate limiting）以防止 DDoS，使用 token bucket 算法；支持多服务器负载均衡的简单代理。
 待改进点：可变大小的读写缓冲区
 待改进点：超大文件的传输，并发上传,拆包，包验证，重发，组合
+待改进点：压力测试
 
 请求示例
 POST /2CGISQL.html HTTP/1.1
