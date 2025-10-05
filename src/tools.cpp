@@ -6,7 +6,6 @@
 #include <signal.h>
 #include <errno.h>
 #include <cstring>
-#include <cassert>
 #include <iostream>
 #include <sys/stat.h>
 
@@ -63,7 +62,11 @@ void Tools::addsig(int sig, void(handler)(int), bool restart)
     if (restart)
         sa.sa_flags |= SA_RESTART; // 自动重启系统调用
     sigfillset(&sa.sa_mask);       // 屏蔽所有信号，防止嵌套
-    assert(sigaction(sig, &sa, NULL) != -1);
+
+    if (sigaction(sig, &sa, NULL) == -1) {
+        perror("sigaction error");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void Tools::show_error(int connfd, const char *info)
@@ -92,7 +95,7 @@ void Tools::create_parent_dirs(const char *path)
 void Tools::timer_cb_func(client_data *user_data)
 {
     epoll_ctl(Tools::u_epollfd, EPOLL_CTL_DEL, user_data->sockfd, 0);
-    assert(user_data);
+    if (user_data == nullptr) return;
     close(user_data->sockfd);
     std::cout << "[cb_func] closed sockfd=" << user_data->sockfd << "\n";
 }

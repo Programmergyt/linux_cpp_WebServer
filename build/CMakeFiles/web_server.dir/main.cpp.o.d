@@ -1,5 +1,5 @@
-CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
- /usr/include/stdc-predef.h /opt/my_cpp/include/./webserver/webserver.h \
+CMakeFiles/web_server.dir/main.cpp.o: /opt/my_server/main.cpp \
+ /usr/include/stdc-predef.h /opt/my_server/include/webserver/webserver.h \
  /usr/include/x86_64-linux-gnu/sys/socket.h /usr/include/features.h \
  /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
@@ -30,6 +30,7 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_timespec.h \
+ /usr/include/x86_64-linux-gnu/bits/select2.h \
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
  /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h \
  /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
@@ -49,7 +50,7 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/x86_64-linux-gnu/asm/sockios.h \
  /usr/include/asm-generic/sockios.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_osockaddr.h \
- /usr/include/netinet/in.h \
+ /usr/include/x86_64-linux-gnu/bits/socket2.h /usr/include/netinet/in.h \
  /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
  /usr/include/x86_64-linux-gnu/bits/in.h /usr/include/arpa/inet.h \
  /usr/include/stdio.h \
@@ -64,12 +65,15 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/x86_64-linux-gnu/bits/types/cookie_io_functions_t.h \
  /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
  /usr/include/x86_64-linux-gnu/bits/floatn.h \
- /usr/include/x86_64-linux-gnu/bits/floatn-common.h /usr/include/unistd.h \
+ /usr/include/x86_64-linux-gnu/bits/floatn-common.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio2.h /usr/include/unistd.h \
  /usr/include/x86_64-linux-gnu/bits/posix_opt.h \
  /usr/include/x86_64-linux-gnu/bits/environments.h \
  /usr/include/x86_64-linux-gnu/bits/confname.h \
  /usr/include/x86_64-linux-gnu/bits/getopt_posix.h \
  /usr/include/x86_64-linux-gnu/bits/getopt_core.h \
+ /usr/include/x86_64-linux-gnu/bits/unistd.h \
  /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
  /usr/include/linux/close_range.h /usr/include/errno.h \
  /usr/include/x86_64-linux-gnu/bits/errno.h /usr/include/linux/errno.h \
@@ -80,7 +84,8 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/x86_64-linux-gnu/bits/fcntl-linux.h \
  /usr/include/linux/falloc.h /usr/include/x86_64-linux-gnu/bits/stat.h \
  /usr/include/x86_64-linux-gnu/bits/struct_stat.h \
- /usr/include/c++/11/stdlib.h /usr/include/c++/11/cstdlib \
+ /usr/include/x86_64-linux-gnu/bits/fcntl2.h /usr/include/c++/11/stdlib.h \
+ /usr/include/c++/11/cstdlib \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/cpu_defines.h \
@@ -88,13 +93,16 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
  /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
- /usr/include/alloca.h /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/alloca.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/x86_64-linux-gnu/bits/stdlib.h \
  /usr/include/c++/11/bits/std_abs.h /usr/include/c++/11/cassert \
  /usr/include/assert.h /usr/include/x86_64-linux-gnu/sys/epoll.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h /usr/include/stdint.h \
  /usr/include/x86_64-linux-gnu/bits/wchar.h \
  /usr/include/x86_64-linux-gnu/bits/epoll.h \
- /opt/my_cpp/include/./webserver/../thread_pool/thread_pool.h \
+ /opt/my_server/include/webserver/../thread_pool/thread_pool.h \
  /usr/include/c++/11/list /usr/include/c++/11/bits/stl_algobase.h \
  /usr/include/c++/11/bits/functexcept.h \
  /usr/include/c++/11/bits/exception_defines.h \
@@ -139,6 +147,7 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/c++/11/cwchar /usr/include/wchar.h \
  /usr/include/x86_64-linux-gnu/bits/types/wint_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h \
+ /usr/include/x86_64-linux-gnu/bits/wchar2.h \
  /usr/include/c++/11/bits/unique_ptr.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/gthr.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/gthr-default.h \
@@ -199,7 +208,7 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/c++/11/bits/basic_ios.tcc \
  /usr/include/c++/11/bits/ostream.tcc /usr/include/c++/11/istream \
  /usr/include/c++/11/bits/istream.tcc \
- /opt/my_cpp/include/./webserver/../http/http_conn.h \
+ /opt/my_server/include/webserver/../http/http_conn.h \
  /usr/include/signal.h \
  /usr/include/x86_64-linux-gnu/bits/signum-generic.h \
  /usr/include/x86_64-linux-gnu/bits/signum-arch.h \
@@ -230,6 +239,8 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/x86_64-linux-gnu/bits/types/struct_statx_timestamp.h \
  /usr/include/x86_64-linux-gnu/bits/types/struct_statx.h \
  /usr/include/string.h /usr/include/strings.h \
+ /usr/include/x86_64-linux-gnu/bits/strings_fortified.h \
+ /usr/include/x86_64-linux-gnu/bits/string_fortified.h \
  /usr/include/x86_64-linux-gnu/sys/mman.h \
  /usr/include/x86_64-linux-gnu/bits/mman.h \
  /usr/include/x86_64-linux-gnu/bits/mman-map-flags-generic.h \
@@ -242,7 +253,7 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/c++/11/bits/stl_tree.h /usr/include/c++/11/bits/stl_map.h \
  /usr/include/c++/11/bits/stl_multimap.h \
  /usr/include/c++/11/bits/erase_if.h \
- /opt/my_cpp/include/./webserver/../http/../sql/sql_connection_pool.h \
+ /opt/my_server/include/webserver/../http/../sql/sql_connection_pool.h \
  /usr/include/mysql/mysql.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stdbool.h \
  /usr/include/mysql/field_types.h /usr/include/mysql/my_list.h \
@@ -254,18 +265,18 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_cpp/main.cpp \
  /usr/include/mysql/mysql_version.h /usr/include/mysql/mysql_time.h \
  /usr/include/mysql/errmsg.h /usr/include/error.h \
  /usr/include/x86_64-linux-gnu/bits/error.h \
- /opt/my_cpp/include/./webserver/../http/../sql/../log/log.h \
+ /opt/my_server/include/webserver/../http/../sql/../log/log.h \
  /usr/include/c++/11/atomic /usr/include/c++/11/bits/atomic_base.h \
  /usr/include/c++/11/bits/atomic_lockfree_defines.h \
- /opt/my_cpp/include/./webserver/../http/../sql/../log/block_queue.h \
- /opt/my_cpp/include/./webserver/../http/../log/log.h \
- /opt/my_cpp/include/./webserver/../http/../tools/tools.h \
- /opt/my_cpp/include/./webserver/../log/log.h \
- /opt/my_cpp/include/./webserver/../timer/timer.h \
+ /opt/my_server/include/webserver/../http/../sql/../log/block_queue.h \
+ /opt/my_server/include/webserver/../http/../log/log.h \
+ /opt/my_server/include/webserver/../http/../tools/tools.h \
+ /opt/my_server/include/webserver/../log/log.h \
+ /opt/my_server/include/webserver/../timer/timer.h \
  /usr/include/c++/11/unordered_map /usr/include/c++/11/bits/hashtable.h \
  /usr/include/c++/11/bits/hashtable_policy.h \
  /usr/include/c++/11/bits/enable_special_members.h \
  /usr/include/c++/11/bits/unordered_map.h \
- /opt/my_cpp/include/./webserver/../timer/../tools/tools.h \
- /opt/my_cpp/include/./webserver/../sql/sql_connection_pool.h \
- /opt/my_cpp/include/./config/config.h
+ /opt/my_server/include/webserver/../timer/../tools/tools.h \
+ /opt/my_server/include/webserver/../sql/sql_connection_pool.h \
+ /opt/my_server/include/config/config.h

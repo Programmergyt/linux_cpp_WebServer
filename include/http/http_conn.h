@@ -83,8 +83,8 @@ public:
     http_conn();
     ~http_conn();
 
-    // TRIGMode 表示 ET(1)/LT(0)
-    void init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMode, int close_log);
+    // 固定使用ET模式
+    void init(int sockfd, const sockaddr_in &addr, char *root, int close_log);
 
     // 选择 0=Proactor, 1=Reactor
     void set_actor_model(int actor_model) { m_actor_model = actor_model; }
@@ -145,8 +145,7 @@ private:
 
     sockaddr_in m_address;
 
-    // 触发模式 / 日志开关 / 模型
-    int m_CONNTrigmode;        // 0=LT, 1=ET
+    // 日志开关 / 模型 (固定使用ET模式)
     int m_close_log;           // 0=开日志, 1=关日志
     int m_actor_model;         // 0=Proactor, 1=Reactor
     IO_STATE m_io_state;       // Reactor 下：本次任务处理读或写

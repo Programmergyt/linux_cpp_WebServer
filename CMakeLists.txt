@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
 project(WebServer)
 
+# ==========================
 # 基础设置
+# ==========================
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
-# 构建类型（默认 Release，可用 -DDEBUG=ON 启用 Debug）
 option(DEBUG "Build with debug symbols" OFF)
 if (DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
@@ -16,10 +17,21 @@ else()
     add_compile_options(-O2)
 endif()
 
-# 头文件目录
+# ==========================
+# 头文件与库
+# ==========================
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# 源文件（递归搜索 src 下的所有 cpp）
+# ==========================
+# 输出目录到项目根目录
+# ==========================
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR})
+
+# ==========================
+# 源文件
+# ==========================
 file(GLOB_RECURSE SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/*.cpp
 )

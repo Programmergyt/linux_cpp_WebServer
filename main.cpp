@@ -1,5 +1,5 @@
-#include "./webserver/webserver.h"
-#include "./config/config.h"
+#include "webserver/webserver.h"
+#include "config/config.h"
 
 int main(int argc, char *argv[])
 {
@@ -16,8 +16,8 @@ int main(int argc, char *argv[])
     // 创建服务器对象并初始化
     WebServer server;
     server.init(config.PORT, databaseURL, user, passwd, databasename,
-                 config.OPT_LINGER, config.TRIGMode, config.sql_num,
-                  config.thread_num, config.close_log, config.actor_model); // 初始化服务器
+                 config.OPT_LINGER,config.sql_num,
+                  config.thread_num, config.close_log); // 初始化服务器
     
     server.eventListen(); // 监听事件
     server.eventLoop(); // 事件循环

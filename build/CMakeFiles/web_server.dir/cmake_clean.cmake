@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "../web_server"
+  "../web_server.pdb"
   "CMakeFiles/web_server.dir/main.cpp.o"
   "CMakeFiles/web_server.dir/main.cpp.o.d"
   "CMakeFiles/web_server.dir/src/config.cpp.o"
@@ -17,8 +19,6 @@ file(REMOVE_RECURSE
   "CMakeFiles/web_server.dir/src/tools.cpp.o.d"
   "CMakeFiles/web_server.dir/src/webserver.cpp.o"
   "CMakeFiles/web_server.dir/src/webserver.cpp.o.d"
-  "web_server"
-  "web_server.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

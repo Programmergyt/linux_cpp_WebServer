@@ -16,7 +16,6 @@ int http_conn::m_epoll_fd = -1; // 或其他合适的初始值
 http_conn::http_conn()
 {
     m_sockfd = -1;
-    m_CONNTrigmode = 0;
     m_close_log = 0;
     m_actor_model = 0;
     m_io_state = IO_NONE;
@@ -85,12 +84,11 @@ void http_conn::init()
 }
 
 // 全部初始化
-void http_conn::init(int sockfd,const sockaddr_in &addr, char *root, int CONNTrigmode, int close_log)
+void http_conn::init(int sockfd,const sockaddr_in &addr, char *root, int close_log)
 {
     m_sockfd = sockfd;
     m_address = addr;
     m_doc_root = root;
-    m_CONNTrigmode = CONNTrigmode;
     m_close_log = close_log;
     m_actor_model = 0; // 默认 Proactor 模型
 
@@ -127,26 +125,19 @@ void http_conn::close_conn(bool real_close)
 bool http_conn::read_once()
 {
     if (m_sockfd == -1) return false;
-    // LT: 读一次就返回；ET: 循环读取直到 EAGAIN
-    if (m_CONNTrigmode == 0) {
+    // 固定使用ET模式：循环读取直到 EAGAIN
+    while (true) {
         int bytes_read = recv(m_sockfd, m_read_buf + m_read_idx, READ_BUFFER_SIZE - m_read_idx, 0);
-        if (bytes_read <= 0) return false;
-        m_read_idx += bytes_read;
-        return true;
-    } else {
-        while (true) {
-            int bytes_read = recv(m_sockfd, m_read_buf + m_read_idx, READ_BUFFER_SIZE - m_read_idx, 0);
-            if (bytes_read == -1) {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) break;
-                return false;
-            } else if (bytes_read == 0) {
-                return false; // 对端关闭
-            }
-            m_read_idx += bytes_read;
-            if (m_read_idx >= READ_BUFFER_SIZE) break; // 满了就退出，读不全大文件
+        if (bytes_read == -1) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+            return false;
+        } else if (bytes_read == 0) {
+            return false; // 对端关闭
         }
-        return true;
+        m_read_idx += bytes_read;
+        if (m_read_idx >= READ_BUFFER_SIZE) break; // 满了就退出，读不全大文件
     }
+    return true;
 }
 
 // 返回true表示单次写成功，返回false表示写失败可以退出
@@ -165,8 +156,8 @@ bool http_conn::write_once()
                 LOG_DEBUG("sockfd:%d, writev returned 0, peer likely closed connection", m_sockfd);
             } else {  // bytes == -1
                 if (errno == EAGAIN) {
-                    // ET 下要继续等待 EPOLLOUT；LT 也同理
-                    Tools::modfd(m_epoll_fd, m_sockfd, EPOLLOUT, m_CONNTrigmode);
+                    // ET 下要继续等待 EPOLLOUT
+                    Tools::modfd(m_epoll_fd, m_sockfd, EPOLLOUT, 1);
                     LOG_DEBUG("EAGAIN, wait for next EPOLLOUT");
                     return true; // 下次再写
                 }
@@ -218,7 +209,7 @@ void http_conn::process()
             HTTP_CODE read_ret = process_read();
             if (read_ret == NO_REQUEST) {
                 // 继续监听读事件
-                Tools::modfd(m_epoll_fd, m_sockfd, EPOLLIN, m_CONNTrigmode);
+                Tools::modfd(m_epoll_fd, m_sockfd, EPOLLIN, 1);
                 return;
             }
             bool write_ok = process_write(read_ret);
@@ -227,7 +218,7 @@ void http_conn::process()
                 return;
             }
             // 🚀 已经生成响应，切换到写事件
-            Tools::modfd(m_epoll_fd, m_sockfd, EPOLLOUT, m_CONNTrigmode);
+            Tools::modfd(m_epoll_fd, m_sockfd, EPOLLOUT, 1);
 
         } else if (m_io_state == IO_WRITE) {
             // Reactor 下线程可能负责写
@@ -240,7 +231,7 @@ void http_conn::process()
         HTTP_CODE read_ret = process_read();
         if (read_ret == NO_REQUEST) {
             // 没读全，继续等
-            Tools::modfd(m_epoll_fd, m_sockfd, EPOLLIN, m_CONNTrigmode);
+            Tools::modfd(m_epoll_fd, m_sockfd, EPOLLIN, 1);
             return;
         }
 
@@ -251,7 +242,7 @@ void http_conn::process()
         }
 
         // 🚀 响应已经准备好，切换到写事件
-        Tools::modfd(m_epoll_fd, m_sockfd, EPOLLOUT, m_CONNTrigmode);
+        Tools::modfd(m_epoll_fd, m_sockfd, EPOLLOUT, 1);
     }
 }
 

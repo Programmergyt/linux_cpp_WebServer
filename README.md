@@ -1,17 +1,18 @@
 编写顺序
 lock->log->config->timer->CGImysql->threadpool->http->webserver
-编译并运行的命令
-chmod +x scripts/git_save.sh
-./scripts/build_and_run.sh
-./scripts/run.sh
-./scripts/pressure_test_run.sh
-./scripts/git_save.sh
 
 数据库
 string user = "root";
 string passwd = "gyt2003gyt";
 string databasename = "gytdb";
  mysql gytdb -u root -p
+
+编译并运行的命令
+chmod +x scripts/*
+./scripts/build_and_run.sh
+./scripts/run.sh
+./scripts/pressure_test_run.sh
+./scripts/git_save.sh
 
 信号量semaphore操作：wait,post
 互斥锁mutex操作：lock,unlock
@@ -25,6 +26,15 @@ string databasename = "gytdb";
 待改进点：命令行参数输入，区分listenfd和connfd的Trigmode
 
 待改进点：做出完整的网站示例，能够发出各种请求。服务器处理时能调用数据库。
+
+待改进点：把代码随想录的异步日志系统缝合进来。
+待改进点：封装http_conn类中的某些方法
+待改进点：实现静态文件缓存（如内存缓存或 Redis 集成），减少磁盘 I/O。还是使用redis集成吧，redis适合集群部署。
+待改进点：改造为类似于 muduo 库 那样的主从 Reactor 架构 。
+待改进点：负载均衡和限流：添加请求限流（rate limiting）以防止 DDoS，使用 token bucket 算法；支持多服务器负载均衡的简单代理。
+待改进点：可变大小的读写缓冲区
+待改进点：超大文件的传输，并发上传,拆包，包验证，重发，组合
+待改进点：压力测试
 
 请求示例
 POST /2CGISQL.html HTTP/1.1
@@ -52,11 +62,8 @@ Content-Type: text/html
 The requested file was not found on this server.
 
 压力测试
-原始界面
 隔壁最高水平：QPS:6000,TPS:3.7MB
-本地最高水平：QPS:6600，TPS：4.6MB
-改进界面
-本地水平:QPS:4500,TPS:5.8MB
+本地最高水平：QPS6600，TPS：4.6MB
 
 常用指令
 wrk -t12 -c10500 -d5s http://192.168.72.128:8080/index.html
