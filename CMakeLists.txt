@@ -4,7 +4,7 @@ project(WebServer)
 # ==========================
 # 基础设置
 # ==========================
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
@@ -45,6 +45,6 @@ file(GLOB TEST_SRC
     ${PROJECT_SOURCE_DIR}/test/*.cpp
 )
 if (TEST_SRC)
-    add_executable(test ${TEST_SRC} ${SRC_FILES})
-    target_link_libraries(test pthread mysqlclient)
+    add_executable(test_server ${TEST_SRC} ${SRC_FILES})
+    target_link_libraries(test_server pthread mysqlclient)
 endif()
