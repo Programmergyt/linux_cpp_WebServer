@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/opt/my_server/include
 
-CXX_FLAGS =  -Wall -O3 -DNDEBUG -O2 -std=gnu++17
+CXX_FLAGS =  -Wall -g -g -O0 -std=gnu++17
 

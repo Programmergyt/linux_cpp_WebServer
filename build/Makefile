@@ -193,6 +193,33 @@ src/config.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_server.dir/build.make CMakeFiles/test_server.dir/src/config.cpp.s
 .PHONY : src/config.cpp.s
 
+src/http/HttpConnection.o: src/http/HttpConnection.cpp.o
+.PHONY : src/http/HttpConnection.o
+
+# target to build an object file
+src/http/HttpConnection.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_server.dir/build.make CMakeFiles/test_server.dir/src/http/HttpConnection.cpp.o
+.PHONY : src/http/HttpConnection.cpp.o
+
+src/http/HttpConnection.i: src/http/HttpConnection.cpp.i
+.PHONY : src/http/HttpConnection.i
+
+# target to preprocess a source file
+src/http/HttpConnection.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_server.dir/build.make CMakeFiles/test_server.dir/src/http/HttpConnection.cpp.i
+.PHONY : src/http/HttpConnection.cpp.i
+
+src/http/HttpConnection.s: src/http/HttpConnection.cpp.s
+.PHONY : src/http/HttpConnection.s
+
+# target to generate assembly for a file
+src/http/HttpConnection.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_server.dir/build.make CMakeFiles/test_server.dir/src/http/HttpConnection.cpp.s
+.PHONY : src/http/HttpConnection.cpp.s
+
 src/http/HttpParser.o: src/http/HttpParser.cpp.o
 .PHONY : src/http/HttpParser.o
 
@@ -300,6 +327,33 @@ src/http/Router.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/Router.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_server.dir/build.make CMakeFiles/test_server.dir/src/http/Router.cpp.s
 .PHONY : src/http/Router.cpp.s
+
+src/http/StaticFileHandler.o: src/http/StaticFileHandler.cpp.o
+.PHONY : src/http/StaticFileHandler.o
+
+# target to build an object file
+src/http/StaticFileHandler.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_server.dir/build.make CMakeFiles/test_server.dir/src/http/StaticFileHandler.cpp.o
+.PHONY : src/http/StaticFileHandler.cpp.o
+
+src/http/StaticFileHandler.i: src/http/StaticFileHandler.cpp.i
+.PHONY : src/http/StaticFileHandler.i
+
+# target to preprocess a source file
+src/http/StaticFileHandler.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_server.dir/build.make CMakeFiles/test_server.dir/src/http/StaticFileHandler.cpp.i
+.PHONY : src/http/StaticFileHandler.cpp.i
+
+src/http/StaticFileHandler.s: src/http/StaticFileHandler.cpp.s
+.PHONY : src/http/StaticFileHandler.s
+
+# target to generate assembly for a file
+src/http/StaticFileHandler.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_server.dir/build.make CMakeFiles/test_server.dir/src/http/StaticFileHandler.cpp.s
+.PHONY : src/http/StaticFileHandler.cpp.s
 
 src/http/http_conn.o: src/http/http_conn.cpp.o
 .PHONY : src/http/http_conn.o
@@ -530,6 +584,9 @@ help:
 	@echo "... src/config.o"
 	@echo "... src/config.i"
 	@echo "... src/config.s"
+	@echo "... src/http/HttpConnection.o"
+	@echo "... src/http/HttpConnection.i"
+	@echo "... src/http/HttpConnection.s"
 	@echo "... src/http/HttpParser.o"
 	@echo "... src/http/HttpParser.i"
 	@echo "... src/http/HttpParser.s"
@@ -542,6 +599,9 @@ help:
 	@echo "... src/http/Router.o"
 	@echo "... src/http/Router.i"
 	@echo "... src/http/Router.s"
+	@echo "... src/http/StaticFileHandler.o"
+	@echo "... src/http/StaticFileHandler.i"
+	@echo "... src/http/StaticFileHandler.s"
 	@echo "... src/http/http_conn.o"
 	@echo "... src/http/http_conn.i"
 	@echo "... src/http/http_conn.s"

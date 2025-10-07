@@ -10,6 +10,7 @@ mysql gytdb -u root -p
 ## 编译并运行的命令
 chmod +x scripts/*
 ./scripts/build_and_run.sh
+./scripts/gdb_debug.sh
 ./scripts/build_and_test.sh
 ./scripts/run.sh
 ./scripts/pressure_test_run.sh
@@ -71,3 +72,6 @@ pgrep -f "./server"
 scp -r C:\\Users\\Thinkbook\\Desktop\\logo.png dick@192.168.72.128:/opt/my_cpp/root/img/ 
 
 
+现在实现webserver类,注意HttpConnection的Router要能处理静态文件请求（html,图片，pdf）、登录请求、注册请求，具体逻辑在http_conn.cpp的process_write函数和do_request里面。使用epoll完成IO复用。按下controlc要能让stop_server为真并退出循环，安全析构。每次遍历epoll事件时，在线程池中处理读写和业务逻辑,注意之后根据返回的Action在主线程注册事件时要对epollctl相关操作（Tools::modfd）进行线程安全的封装，保证注册事件是线程安全的。
+
+现在实现HttpConnection类,注意HttpConnection要能处理静态文件请求（比如/index.html,图片或pdf）以及非静态文件请求（比如/api/login，返回json）。
