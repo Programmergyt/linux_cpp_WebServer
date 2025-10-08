@@ -1,400 +1,23 @@
 #include "webserver/webserver.h"
-
-
-/**
- * @brief 获取文件的MIME类型
- */
-static std::string get_mime_type(const std::string& file_path) {
-    static const std::unordered_map<std::string, std::string> mime_types = {
-        // 文本文件
-        {".html", "text/html"},
-        {".htm", "text/html"},
-        {".css", "text/css"},
-        {".js", "application/javascript"},
-        {".json", "application/json"},
-        {".txt", "text/plain"},
-        {".xml", "text/xml"},
-        {".csv", "text/csv"},
-        
-        // 图片文件
-        {".jpg", "image/jpeg"},
-        {".jpeg", "image/jpeg"},
-        {".png", "image/png"},
-        {".gif", "image/gif"},
-        {".bmp", "image/bmp"},
-        {".webp", "image/webp"},
-        {".svg", "image/svg+xml"},
-        {".ico", "image/x-icon"},
-        
-        // 文档文件
-        {".pdf", "application/pdf"},
-        {".doc", "application/msword"},
-        {".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
-        {".xls", "application/vnd.ms-excel"},
-        {".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
-        {".ppt", "application/vnd.ms-powerpoint"},
-        {".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
-        
-        // 音视频文件
-        {".mp3", "audio/mpeg"},
-        {".wav", "audio/wav"},
-        {".mp4", "video/mp4"},
-        {".avi", "video/x-msvideo"},
-        
-        // 压缩文件
-        {".zip", "application/zip"},
-        {".tar", "application/x-tar"},
-        {".gz", "application/gzip"},
-        {".rar", "application/x-rar-compressed"},
-        
-        // 字体文件
-        {".ttf", "font/ttf"},
-        {".woff", "font/woff"},
-        {".woff2", "font/woff2"},
-        
-        // 其他
-        {".bin", "application/octet-stream"}
-    };
-    
-    // 获取文件扩展名
-    size_t dot_pos = file_path.find_last_of('.');
-    if (dot_pos == std::string::npos) {
-        return "application/octet-stream"; // 默认二进制类型
-    }
-    
-    std::string extension = file_path.substr(dot_pos);
-    // 转换为小写
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-    
-    auto it = mime_types.find(extension);
-    if (it != mime_types.end()) {
-        return it->second;
-    }
-    
-    return "application/octet-stream"; // 默认二进制类型
-}
-
-/**
- * @brief 处理静态文件请求的handler
- * 支持pdf、jpg、png、css、js、html等常用文件格式
- */
-static HttpResponse handle_static_file(const HttpRequest& req, RequestContext& ctx) {
-    std::cout << "--- Handler: handle_static_file called for path: " << req.path << " ---\n";
-    
-    std::string request_path = req.path;
-    
-    // 特殊处理：根目录重定向到index.html
-    if (request_path == "/" || request_path.empty()) {
-        request_path = "/index.html";
-        std::cout << "[INFO] Root path redirected to /index.html" << std::endl;
-    }
-    
-    // 处理无扩展名的文件，尝试添加.html扩展名
-    if (request_path.find('.') == std::string::npos && request_path != "/") {
-        std::string html_path = request_path + ".html";
-        std::string test_file_path = ctx.doc_root + html_path;
-        if (std::filesystem::exists(test_file_path)) {
-            request_path = html_path;
-            std::cout << "[INFO] No extension file found as HTML: " << request_path << std::endl;
-        }
-    }
-    
-    // 构建完整的文件路径
-    std::string file_path = ctx.doc_root + request_path;
-    
-    // 安全检查：防止路径遍历攻击
-    std::string canonical_doc_root;
-    std::string canonical_file_path;
-    
-    try {
-        canonical_doc_root = std::filesystem::canonical(ctx.doc_root);
-        canonical_file_path = std::filesystem::canonical(file_path);
-        
-        // 检查请求的文件是否在文档根目录下
-        if (canonical_file_path.substr(0, canonical_doc_root.length()) != canonical_doc_root) {
-            std::cout << "[SECURITY] Path traversal attempt detected: " << req.path << std::endl;
-            return HttpResponse::make_error(403); // Forbidden
-        }
-    } catch (const std::filesystem::filesystem_error& e) {
-        // 如果路径不存在或无法解析，返回404
-        std::cout << "[ERROR] Filesystem error: " << e.what() << std::endl;
-        return HttpResponse::make_error(404);
-    }
-    
-    // 检查文件是否存在且是常规文件
-    if (!std::filesystem::exists(canonical_file_path) || 
-        !std::filesystem::is_regular_file(canonical_file_path)) {
-        std::cout << "[ERROR] File not found or not a regular file: " << canonical_file_path << std::endl;
-        return HttpResponse::make_error(404);
-    }
-    
-    // 检查文件权限（可读）
-    std::ifstream file(canonical_file_path, std::ios::binary);
-    if (!file.is_open()) {
-        std::cout << "[ERROR] Cannot open file: " << canonical_file_path << std::endl;
-        return HttpResponse::make_error(403); // Forbidden
-    }
-    
-    // 获取文件大小
-    std::error_code ec;
-    auto file_size = std::filesystem::file_size(canonical_file_path, ec);
-    if (ec) {
-        std::cout << "[ERROR] Cannot get file size: " << ec.message() << std::endl;
-        return HttpResponse::make_error(500);
-    }
-    
-    // 获取MIME类型
-    std::string mime_type = get_mime_type(canonical_file_path);
-    
-    // 创建响应
-    HttpResponse response;
-    response.status_code = 200;
-    response.status_text = "OK";
-    response.set_header("Content-Type", mime_type);
-    response.set_header("Content-Length", std::to_string(file_size));
-    
-    // 添加缓存控制头
-    if (mime_type.find("image/") == 0 || mime_type.find("font/") == 0 || 
-        mime_type == "text/css" || mime_type == "application/javascript") {
-        // 静态资源可以缓存较长时间
-        response.set_header("Cache-Control", "public, max-age=3600"); // 1小时
-    } else {
-        // 其他文件缓存时间较短
-        response.set_header("Cache-Control", "public, max-age=300"); // 5分钟
-    }
-    
-    // 对于较小的文件（小于1MB），直接读取到内存
-    if (file_size < 1024 * 1024) {
-        std::string content((std::istreambuf_iterator<char>(file)),
-                           std::istreambuf_iterator<char>());
-        response.body = std::move(content);
-        std::cout << "[SUCCESS] Small file loaded to memory: " << file_size << " bytes" << std::endl;
-    } else {
-        // 对于大文件，使用文件路径，让HttpConnection使用sendfile发送
-        response.file_path = canonical_file_path;
-        std::cout << "[SUCCESS] Large file will be sent via sendfile: " << file_size << " bytes" << std::endl;
-    }
-    
-    file.close();
-    return response;
-}
-
-/**
- * @brief 解析表单数据的辅助函数
- */
-static std::string parse_form_field(const std::string& body, const std::string& key) {
-    std::string search_key = key + "=";
-    size_t pos = body.find(search_key);
-    if (pos == std::string::npos) {
-        return std::string();
-    }
-    
-    size_t start = pos + search_key.length();
-    size_t end = body.find("&", start);
-    if (end == std::string::npos) {
-        end = body.length();
-    }
-    
-    return body.substr(start, end - start);
-}
-
-/**
- * @brief 处理用户注册请求的handler
- */
-static HttpResponse handle_register(const HttpRequest& req, RequestContext& ctx) {
-    std::cout << "--- Handler: handle_register called ---\n";
-    
-    // 检查请求方法
-    if (req.method != HttpMethod::POST) {
-        HttpResponse response;
-        response.status_code = 405;
-        response.status_text = "Method Not Allowed";
-        response.set_header("Content-Type", "application/json");
-        response.body = R"({"status": "error", "msg": "只支持POST方法"})";
-        return response;
-    }
-    
-    // 解析表单数据
-    std::string username = parse_form_field(req.raw_body, "username");
-    std::string password = parse_form_field(req.raw_body, "password");
-    std::string email = parse_form_field(req.raw_body, "email");
-    
-    std::cout << "[INFO] Register attempt: username=" << username 
-              << ", email=" << email << std::endl;
-    
-    // 检查必填字段
-    if (username.empty() || password.empty()) {
-        HttpResponse response;
-        response.status_code = 400;
-        response.status_text = "Bad Request";
-        response.set_header("Content-Type", "application/json");
-        response.body = R"({"status": "error", "msg": "用户名和密码不能为空"})";
-        return response;
-    }
-    
-    // 数据库操作
-    if (ctx.db_pool == nullptr) {
-        std::cout << "[ERROR] Database pool is null" << std::endl;
-        HttpResponse response;
-        response.status_code = 500;
-        response.status_text = "Internal Server Error";
-        response.set_header("Content-Type", "application/json");
-        response.body = R"({"status": "error", "msg": "数据库连接失败"})";
-        return response;
-    }
-    
-    MYSQL* mysql = nullptr;
-    connectionRAII mysqlcon(&mysql, ctx.db_pool);
-    
-    if (mysql == nullptr) {
-        std::cout << "[ERROR] Failed to get database connection" << std::endl;
-        HttpResponse response;
-        response.status_code = 500;
-        response.status_text = "Internal Server Error";
-        response.set_header("Content-Type", "application/json");
-        response.body = R"({"status": "error", "msg": "数据库连接失败"})";
-        return response;
-    }
-    
-    // 构造SQL语句
-    char sql[512];
-    snprintf(sql, sizeof(sql),
-             "INSERT INTO users(username, password, email) VALUES('%s', '%s', '%s')",
-             username.c_str(), password.c_str(), email.c_str());
-    
-    HttpResponse response;
-    response.set_header("Content-Type", "application/json");
-    
-    if (mysql_query(mysql, sql)) {
-        std::cout << "[ERROR] MySQL query failed: " << mysql_error(mysql) << std::endl;
-        response.status_code = 500;
-        response.status_text = "Internal Server Error";
-        response.body = R"({"status": "error", "msg": "注册失败"})";
-    } else {
-        std::cout << "[SUCCESS] User registered successfully: " << username << std::endl;
-        response.status_code = 200;
-        response.status_text = "OK";
-        response.body = R"({"status": "ok", "msg": "注册成功"})";
-    }
-    
-    return response;
-}
-
-/**
- * @brief 处理用户登录请求的handler
- */
-static HttpResponse handle_login(const HttpRequest& req, RequestContext& ctx) {
-    std::cout << "--- Handler: handle_login called ---\n";
-    
-    // 检查请求方法
-    if (req.method != HttpMethod::POST) {
-        HttpResponse response;
-        response.status_code = 405;
-        response.status_text = "Method Not Allowed";
-        response.set_header("Content-Type", "application/json");
-        response.body = R"({"status": "error", "msg": "只支持POST方法"})";
-        return response;
-    }
-    
-    // 解析表单数据
-    std::string username = parse_form_field(req.raw_body, "username");
-    std::string password = parse_form_field(req.raw_body, "password");
-    
-    std::cout << "[INFO] Login attempt: username=" << username << std::endl;
-    
-    // 检查必填字段
-    if (username.empty() || password.empty()) {
-        HttpResponse response;
-        response.status_code = 400;
-        response.status_text = "Bad Request";
-        response.set_header("Content-Type", "application/json");
-        response.body = R"({"status": "error", "msg": "用户名和密码不能为空"})";
-        return response;
-    }
-    
-    // 数据库操作
-    if (ctx.db_pool == nullptr) {
-        std::cout << "[ERROR] Database pool is null" << std::endl;
-        HttpResponse response;
-        response.status_code = 500;
-        response.status_text = "Internal Server Error";
-        response.set_header("Content-Type", "application/json");
-        response.body = R"({"status": "error", "msg": "数据库连接失败"})";
-        return response;
-    }
-    
-    MYSQL* mysql = nullptr;
-    connectionRAII mysqlcon(&mysql, ctx.db_pool);
-    
-    if (mysql == nullptr) {
-        std::cout << "[ERROR] Failed to get database connection" << std::endl;
-        HttpResponse response;
-        response.status_code = 500;
-        response.status_text = "Internal Server Error";
-        response.set_header("Content-Type", "application/json");
-        response.body = R"({"status": "error", "msg": "数据库连接失败"})";
-        return response;
-    }
-    
-    // 构造SQL查询语句
-    char sql[512];
-    snprintf(sql, sizeof(sql),
-             "SELECT id FROM users WHERE username='%s' AND password='%s'",
-             username.c_str(), password.c_str());
-    
-    HttpResponse response;
-    response.set_header("Content-Type", "application/json");
-    
-    if (mysql_query(mysql, sql)) {
-        std::cout << "[ERROR] MySQL query failed: " << mysql_error(mysql) << std::endl;
-        response.status_code = 500;
-        response.status_text = "Internal Server Error";
-        response.body = R"({"status": "error", "msg": "登录失败"})";
-    } else {
-        MYSQL_RES* result = mysql_store_result(mysql);
-        if (result == nullptr) {
-            std::cout << "[ERROR] Failed to store result: " << mysql_error(mysql) << std::endl;
-            response.status_code = 500;
-            response.status_text = "Internal Server Error";
-            response.body = R"({"status": "error", "msg": "登录失败"})";
-        } else {
-            my_ulonglong num_rows = mysql_num_rows(result);
-            mysql_free_result(result);
-            
-            if (num_rows == 0) {
-                std::cout << "[INFO] Login failed: invalid credentials for " << username << std::endl;
-                response.status_code = 401;
-                response.status_text = "Unauthorized";
-                response.body = R"({"status": "error", "msg": "用户名或密码错误"})";
-            } else {
-                std::cout << "[SUCCESS] User logged in successfully: " << username << std::endl;
-                response.status_code = 200;
-                response.status_text = "OK";
-                response.body = R"({"status": "ok", "msg": "登录成功"})";
-            }
-        }
-    }
-    
-    return response;
-}
-
-/**
- * @brief 处理简单GET请求返回JSON的handler
- */
-static HttpResponse handle_simple_json_get(const HttpRequest& req, RequestContext& ctx) {
-    std::cout << "--- Handler: handle_simple_json_get called ---\n";
-    std::string json_response = R"({"message": "Hello from HttpConnection", "status": "success"})";
-    return HttpResponse()
-        .with_status(200, "OK")
-        .with_header("Content-Type", "application/json")
-        .with_body(json_response);
-}
+#include "handler/handler.h"
 
 void WebServer::handle_action(int connfd, HttpConnection::Action action)
 {
+    // 首先检查连接是否还存在
+    {
+        std::lock_guard<std::mutex> lock(m_connections_mutex);
+        if (m_connections[connfd] == nullptr && action != HttpConnection::Action::Close) {
+            // 连接已经关闭，忽略其他操作
+            return;
+        }
+    }
+
     switch (action)
     {
     case HttpConnection::Action::Read:
+        // 注册读事件
+        Tools::modfd(m_epollfd, connfd, EPOLLIN, 1);
+        break;
     case HttpConnection::Action::Wait:
         // 注册读事件（ET / LT 模式 + oneshot）
         Tools::modfd(m_epollfd, connfd, EPOLLIN, 1);
@@ -408,7 +31,11 @@ void WebServer::handle_action(int connfd, HttpConnection::Action action)
     case HttpConnection::Action::Close:
         // 从 epoll 删除并关闭 fd
         Tools::removefd(m_epollfd, connfd);
-        m_connections[connfd].reset(); // unique_ptr自动delete
+        {
+            std::lock_guard<std::mutex> lock(m_connections_mutex);
+            m_connections[connfd].reset(); // unique_ptr自动delete
+        }
+        LOG_DEBUG("Connection closed: fd=%d", connfd);
         break;
 
     default:
@@ -430,16 +57,37 @@ WebServer::WebServer()
 
 WebServer::~WebServer()
 {
+    // 关闭所有连接
+    {
+        std::lock_guard<std::mutex> lock(m_connections_mutex);
+        for (auto& conn : m_connections) {
+            if (conn) {
+                conn.reset();
+            }
+        }
+        m_connections.clear();
+    }
+    
     if (m_epollfd != -1)
     {
         close(m_epollfd);
+        m_epollfd = -1;
     }
     if (m_listenfd != -1)
     {
         close(m_listenfd);
+        m_listenfd = -1;
     }
-    close(m_pipefd[1]);
-    close(m_pipefd[0]);
+    
+    if (m_pipefd[1] != -1) {
+        close(m_pipefd[1]);
+        m_pipefd[1] = -1;
+    }
+    if (m_pipefd[0] != -1) {
+        close(m_pipefd[0]);
+        m_pipefd[0] = -1;
+    }
+    
     if (m_pool)
     {
         delete m_pool;
@@ -449,6 +97,12 @@ WebServer::~WebServer()
     {
         m_connPool->DestroyPool();
         m_connPool = nullptr;
+    }
+    
+    // 释放根目录路径
+    if (m_root) {
+        free(m_root);
+        m_root = nullptr;
     }
 }
 
@@ -589,14 +243,20 @@ void WebServer::eventLoop()
                         break;
                     }
                     Tools::addfd(m_epollfd, connfd, true, 1);           // ET模式
-                    std::cout << "New client connected, fd: " << connfd << std::endl; // 调试信息
-                    m_connections[connfd] = std::make_unique<HttpConnection>(connfd, client_addr, &m_router, &m_context);
+                    LOG_INFO("New client connected: %d", connfd); // 日志
+                    {
+                        std::lock_guard<std::mutex> lock(m_connections_mutex);
+                        m_connections[connfd] = std::make_unique<HttpConnection>(connfd, client_addr, &m_router, &m_context);
+                    }
                 }
                 continue;
             }
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
-                m_connections[sockfd]->reset();
+                {
+                    std::lock_guard<std::mutex> lock(m_connections_mutex);
+                    m_connections[sockfd].reset();
+                }
                 epoll_ctl(m_epollfd, EPOLL_CTL_DEL, sockfd, 0);
                 LOG_DEBUG("Client disconnected: %d", sockfd);
             }
@@ -632,10 +292,19 @@ void WebServer::eventLoop()
                 LOG_DEBUG("EPOLLIN event on fd %d", sockfd);
                 // Reactor模式
                 m_pool->append([this, sockfd]()
-                               {
-                                   HttpConnection::Action action = m_connections[sockfd]->handle_read();
-                                   handle_action(sockfd, action);
-                               });
+                {
+                    HttpConnection::Action action;
+                    {
+                        std::lock_guard<std::mutex> lock(m_connections_mutex);
+                        if (m_connections[sockfd] != nullptr) {
+                            action = m_connections[sockfd]->handle_read();
+                        } else {
+                            return; // 连接已经关闭，直接返回
+                        }
+                    }
+                    // 锁自动释放后再调用handle_action，避免死锁
+                    handle_action(sockfd, action);
+                });
             }
             else if (events[i].events & EPOLLOUT)
             {
@@ -643,7 +312,16 @@ void WebServer::eventLoop()
                 // Reactor模式
                 m_pool->append([this, sockfd]()
                 {
-                    HttpConnection::Action action = m_connections[sockfd]->handle_write();
+                    HttpConnection::Action action;
+                    {
+                        std::lock_guard<std::mutex> lock(m_connections_mutex);
+                        if (m_connections[sockfd] != nullptr) {
+                            action = m_connections[sockfd]->handle_write();
+                        } else {
+                            return; // 连接已经关闭，直接返回
+                        }
+                    }
+                    // 锁自动释放后再调用handle_action，避免死锁
                     handle_action(sockfd, action);
                 });
             }

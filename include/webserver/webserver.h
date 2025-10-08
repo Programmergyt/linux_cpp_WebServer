@@ -23,6 +23,7 @@
 #include "../log/log.h"
 #include "../timer/timer.h"
 #include "../sql/sql_connection_pool.h"
+#include "../handler/handler.h"
 
 const int MAX_FD = 65536;           // 最大文件描述符
 const int MAX_EVENT_NUMBER = 10000; // 最大事件数
@@ -47,8 +48,9 @@ public:
     int m_listenfd;
     epoll_event events[MAX_EVENT_NUMBER];
     std::vector<std::unique_ptr<HttpConnection>> m_connections;
+    std::mutex m_connections_mutex; // 用于保护连接容器的互斥锁
     int m_pipefd[2];
-    bool stop_server;
+    std::atomic<bool> stop_server;
     Router m_router;
     RequestContext m_context;
 

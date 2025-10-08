@@ -307,4 +307,6 @@ CMakeFiles/web_server.dir/main.cpp.o: /opt/my_server/main.cpp \
  /opt/my_server/include/webserver/../timer/timer.h \
  /opt/my_server/include/webserver/../timer/../tools/tools.h \
  /opt/my_server/include/webserver/../sql/sql_connection_pool.h \
+ /opt/my_server/include/webserver/../handler/handler.h \
+ /opt/my_server/include/sql/sql_connection_pool.h \
  /opt/my_server/include/config/config.h

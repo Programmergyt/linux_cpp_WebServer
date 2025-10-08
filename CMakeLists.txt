@@ -40,11 +40,11 @@ file(GLOB_RECURSE SRC_FILES
 add_executable(web_server main.cpp ${SRC_FILES})
 target_link_libraries(web_server pthread mysqlclient)
 
-# 测试程序
-file(GLOB TEST_SRC
-    ${PROJECT_SOURCE_DIR}/test/*.cpp
-)
-if (TEST_SRC)
-    add_executable(test_server ${TEST_SRC} ${SRC_FILES})
-    target_link_libraries(test_server pthread mysqlclient)
-endif()
+# # 测试程序
+# file(GLOB TEST_SRC
+#     ${PROJECT_SOURCE_DIR}/test/*.cpp
+# )
+# if (TEST_SRC)
+#     add_executable(test_server ${TEST_SRC} ${SRC_FILES})
+#     target_link_libraries(test_server pthread mysqlclient)
+# endif()

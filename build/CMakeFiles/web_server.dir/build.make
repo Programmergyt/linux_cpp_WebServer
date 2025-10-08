@@ -97,10 +97,24 @@ CMakeFiles/web_server.dir/src/config.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/web_server.dir/src/config.cpp.s"
 	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /opt/my_server/src/config.cpp -o CMakeFiles/web_server.dir/src/config.cpp.s
 
+CMakeFiles/web_server.dir/src/handler.cpp.o: CMakeFiles/web_server.dir/flags.make
+CMakeFiles/web_server.dir/src/handler.cpp.o: ../src/handler.cpp
+CMakeFiles/web_server.dir/src/handler.cpp.o: CMakeFiles/web_server.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/web_server.dir/src/handler.cpp.o"
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/web_server.dir/src/handler.cpp.o -MF CMakeFiles/web_server.dir/src/handler.cpp.o.d -o CMakeFiles/web_server.dir/src/handler.cpp.o -c /opt/my_server/src/handler.cpp
+
+CMakeFiles/web_server.dir/src/handler.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/web_server.dir/src/handler.cpp.i"
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /opt/my_server/src/handler.cpp > CMakeFiles/web_server.dir/src/handler.cpp.i
+
+CMakeFiles/web_server.dir/src/handler.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/web_server.dir/src/handler.cpp.s"
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /opt/my_server/src/handler.cpp -o CMakeFiles/web_server.dir/src/handler.cpp.s
+
 CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o: CMakeFiles/web_server.dir/flags.make
 CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o: ../src/http/HttpConnection.cpp
 CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o: CMakeFiles/web_server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o"
 	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o -MF CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o.d -o CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o -c /opt/my_server/src/http/HttpConnection.cpp
 
 CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.i: cmake_force
@@ -114,7 +128,7 @@ CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.s: cmake_force
 CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o: CMakeFiles/web_server.dir/flags.make
 CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o: ../src/http/HttpParser.cpp
 CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o: CMakeFiles/web_server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o"
 	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o -MF CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o.d -o CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o -c /opt/my_server/src/http/HttpParser.cpp
 
 CMakeFiles/web_server.dir/src/http/HttpParser.cpp.i: cmake_force
@@ -128,7 +142,7 @@ CMakeFiles/web_server.dir/src/http/HttpParser.cpp.s: cmake_force
 CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o: CMakeFiles/web_server.dir/flags.make
 CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o: ../src/http/HttpRequest.cpp
 CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o: CMakeFiles/web_server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o"
 	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o -MF CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o.d -o CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o -c /opt/my_server/src/http/HttpRequest.cpp
 
 CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.i: cmake_force
@@ -142,7 +156,7 @@ CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.s: cmake_force
 CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o: CMakeFiles/web_server.dir/flags.make
 CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o: ../src/http/HttpResponse.cpp
 CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o: CMakeFiles/web_server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o"
 	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o -MF CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o.d -o CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o -c /opt/my_server/src/http/HttpResponse.cpp
 
 CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.i: cmake_force
@@ -156,7 +170,7 @@ CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.s: cmake_force
 CMakeFiles/web_server.dir/src/http/Router.cpp.o: CMakeFiles/web_server.dir/flags.make
 CMakeFiles/web_server.dir/src/http/Router.cpp.o: ../src/http/Router.cpp
 CMakeFiles/web_server.dir/src/http/Router.cpp.o: CMakeFiles/web_server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/web_server.dir/src/http/Router.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/web_server.dir/src/http/Router.cpp.o"
 	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/web_server.dir/src/http/Router.cpp.o -MF CMakeFiles/web_server.dir/src/http/Router.cpp.o.d -o CMakeFiles/web_server.dir/src/http/Router.cpp.o -c /opt/my_server/src/http/Router.cpp
 
 CMakeFiles/web_server.dir/src/http/Router.cpp.i: cmake_force
@@ -166,20 +180,6 @@ CMakeFiles/web_server.dir/src/http/Router.cpp.i: cmake_force
 CMakeFiles/web_server.dir/src/http/Router.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/web_server.dir/src/http/Router.cpp.s"
 	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /opt/my_server/src/http/Router.cpp -o CMakeFiles/web_server.dir/src/http/Router.cpp.s
-
-CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o: CMakeFiles/web_server.dir/flags.make
-CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o: ../src/http/StaticFileHandler.cpp
-CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o: CMakeFiles/web_server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o"
-	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o -MF CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o.d -o CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o -c /opt/my_server/src/http/StaticFileHandler.cpp
-
-CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.i"
-	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /opt/my_server/src/http/StaticFileHandler.cpp > CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.i
-
-CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.s"
-	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /opt/my_server/src/http/StaticFileHandler.cpp -o CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.s
 
 CMakeFiles/web_server.dir/src/http/http_conn.cpp.o: CMakeFiles/web_server.dir/flags.make
 CMakeFiles/web_server.dir/src/http/http_conn.cpp.o: ../src/http/http_conn.cpp
@@ -283,12 +283,12 @@ CMakeFiles/web_server.dir/src/webserver.cpp.s: cmake_force
 web_server_OBJECTS = \
 "CMakeFiles/web_server.dir/main.cpp.o" \
 "CMakeFiles/web_server.dir/src/config.cpp.o" \
+"CMakeFiles/web_server.dir/src/handler.cpp.o" \
 "CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o" \
 "CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o" \
 "CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o" \
 "CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o" \
 "CMakeFiles/web_server.dir/src/http/Router.cpp.o" \
-"CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o" \
 "CMakeFiles/web_server.dir/src/http/http_conn.cpp.o" \
 "CMakeFiles/web_server.dir/src/log.cpp.o" \
 "CMakeFiles/web_server.dir/src/sql_connection_pool.cpp.o" \
@@ -302,12 +302,12 @@ web_server_EXTERNAL_OBJECTS =
 
 ../web_server: CMakeFiles/web_server.dir/main.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/config.cpp.o
+../web_server: CMakeFiles/web_server.dir/src/handler.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/http/Router.cpp.o
-../web_server: CMakeFiles/web_server.dir/src/http/StaticFileHandler.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/http/http_conn.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/log.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/sql_connection_pool.cpp.o

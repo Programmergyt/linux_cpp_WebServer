@@ -3,6 +3,8 @@
 
 #include <string>
 #include <netinet/in.h>
+#include <unordered_map>
+#include <algorithm>
 
 class util_timer; // 前向声明，避免循环依赖
 
@@ -48,6 +50,12 @@ public:
 
     //修改在 epoll 实例中注册的文件描述符 fd 的事件,本质是在读事件和写事件之间进行切换
     static void modfd(int epollfd, int fd, int ev, int TRIGMode);
+
+    // 获取文件的MIME类型
+    static std::string get_mime_type(const std::string& file_path);
+    
+    // 解析表单数据的辅助函数
+    static std::string parse_form_field(const std::string& body, const std::string& key);
 
     static int *u_pipefd;   // 管道，用于信号通知,保存socket两端的两个文件描述符fd
     static int u_epollfd;     // 全局 epoll fd

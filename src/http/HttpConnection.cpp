@@ -227,16 +227,24 @@ void HttpConnection::prepare_response(const HttpResponse& response) {
             return;
         }
         
-        // 添加Content-Length头
-        header_stream << "Content-Length: " << file_stat.st_size << "\r\n";
+        // 如果上层没设置 Content-Length，则自动补充
+        if (response.headers.find("Content-Length") == response.headers.end()) {
+            header_stream << "Content-Length: " << file_stat.st_size << "\r\n";
+        }
         header_stream << "\r\n";
         
         // 准备iovec结构
         std::string header_str = header_stream.str();
         m_write_buffer.assign(header_str.begin(), header_str.end());
         
-        m_iov[0].iov_base = m_write_buffer.data();
-        m_iov[0].iov_len = m_write_buffer.size();
+        // 确保缓冲区不为空
+        if (!m_write_buffer.empty()) {
+            m_iov[0].iov_base = m_write_buffer.data();
+            m_iov[0].iov_len = m_write_buffer.size();
+        } else {
+            m_iov[0].iov_base = nullptr;
+            m_iov[0].iov_len = 0;
+        }
         m_iov_count = 1;
         
         m_file_offset = 0;
@@ -244,7 +252,8 @@ void HttpConnection::prepare_response(const HttpResponse& response) {
         m_bytes_to_send = m_write_buffer.size() + file_stat.st_size;
     } else {
         // 文本响应
-        if (!response.body.empty()) {
+        if (!response.body.empty() && 
+            response.headers.find("Content-Length") == response.headers.end()) {
             header_stream << "Content-Length: " << response.body.size() << "\r\n";
         }
         header_stream << "\r\n";
@@ -280,6 +289,9 @@ void HttpConnection::reset_for_keep_alive() {
     
     m_file_offset = 0;
     m_file_bytes_to_send = 0;
+    
+    // 清零iovec结构
+    memset(m_iov, 0, sizeof(m_iov));
     m_iov_count = 0;
     m_bytes_to_send = 0;
     m_bytes_have_sent = 0;
