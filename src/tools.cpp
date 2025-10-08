@@ -111,10 +111,8 @@ void Tools::timer_cb_func(client_data *user_data)
 
 void Tools::removefd(int epollfd, int fd)
 {
-    {
-        std::lock_guard<std::mutex> lock(epoll_mutex);
-        epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, 0);
-    }
+    // 直接调用即可，无需加锁
+    epoll_ctl(epollfd, EPOLL_CTL_DEL, fd, 0);
     close(fd);
 }
 
@@ -128,10 +126,9 @@ void Tools::modfd(int epollfd, int fd, int ev, int TRIGMode)
     else
         event.events = ev | EPOLLONESHOT | EPOLLRDHUP;
 
-    {
-        std::lock_guard<std::mutex> lock(epoll_mutex);
-        epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &event);
-    }
+    std::lock_guard<std::mutex> lock(epoll_mutex);
+    epoll_ctl(epollfd, EPOLL_CTL_MOD, fd, &event);
+
 }
 
 std::string Tools::get_mime_type(const std::string& file_path) {

@@ -15,6 +15,7 @@ chmod +x scripts/*
 ./scripts/run.sh
 ./scripts/pressure_test_run.sh
 ./scripts/git_save.sh
+wrk -t12 -c10500 -d5s http://192.168.72.128:8080/index.html
 
 ## 改进点
 改进点：固定使用reactor，listenfd使用LT,connectfd使用ET
@@ -59,6 +60,9 @@ The requested file was not found on this server.
 压力测试
 隔壁最高水平：QPS:6000,TPS:3.7MB
 本地最高水平：QPS6600，TPS：4.6MB
+
+重构版
+动态分配内存：QPS3500,TPS4.5MB
 
 
 常用指令
