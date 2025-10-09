@@ -20,6 +20,7 @@
 
 #include "../thread_pool/thread_pool.h"
 #include "../http/HttpConnection.h"
+#include "../http/ConnectionPool.h"
 #include "../log/log.h"
 #include "../timer/timer.h"
 #include "../sql/sql_connection_pool.h"
@@ -47,7 +48,7 @@ public:
     int m_epollfd;
     int m_listenfd;
     epoll_event events[MAX_EVENT_NUMBER];
-    std::vector<std::unique_ptr<HttpConnection>> m_connections;
+    std::vector<std::unique_ptr<ManagedConnection>> m_connections;
     std::mutex m_connections_mutex; // 用于保护连接容器的互斥锁
     int m_pipefd[2];
     std::atomic<bool> stop_server;

@@ -7,6 +7,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/web_server.dir/src/config.cpp.o.d"
   "CMakeFiles/web_server.dir/src/handler.cpp.o"
   "CMakeFiles/web_server.dir/src/handler.cpp.o.d"
+  "CMakeFiles/web_server.dir/src/http/ConnectionPool.cpp.o"
+  "CMakeFiles/web_server.dir/src/http/ConnectionPool.cpp.o.d"
   "CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o"
   "CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o.d"
   "CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o"

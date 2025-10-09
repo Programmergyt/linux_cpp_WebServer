@@ -11,6 +11,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/opt/my_server/main.cpp" "CMakeFiles/web_server.dir/main.cpp.o" "gcc" "CMakeFiles/web_server.dir/main.cpp.o.d"
   "/opt/my_server/src/config.cpp" "CMakeFiles/web_server.dir/src/config.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/config.cpp.o.d"
   "/opt/my_server/src/handler.cpp" "CMakeFiles/web_server.dir/src/handler.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/handler.cpp.o.d"
+  "/opt/my_server/src/http/ConnectionPool.cpp" "CMakeFiles/web_server.dir/src/http/ConnectionPool.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/http/ConnectionPool.cpp.o.d"
   "/opt/my_server/src/http/HttpConnection.cpp" "CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/http/HttpConnection.cpp.o.d"
   "/opt/my_server/src/http/HttpParser.cpp" "CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/http/HttpParser.cpp.o.d"
   "/opt/my_server/src/http/HttpRequest.cpp" "CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/http/HttpRequest.cpp.o.d"

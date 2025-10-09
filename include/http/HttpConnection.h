@@ -34,6 +34,9 @@ public:
     // 用于重置全部状态
     void reset();
 
+    // 重新初始化连接（用于内存池复用）
+    void reinitialize(int sockfd, const sockaddr_in& addr, Router* router, RequestContext* context);
+
     int get_fd() const { return m_sockfd; }
 
 private:

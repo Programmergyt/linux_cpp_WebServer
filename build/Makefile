@@ -201,6 +201,30 @@ src/handler.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/handler.cpp.s
 .PHONY : src/handler.cpp.s
 
+src/http/ConnectionPool.o: src/http/ConnectionPool.cpp.o
+.PHONY : src/http/ConnectionPool.o
+
+# target to build an object file
+src/http/ConnectionPool.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/ConnectionPool.cpp.o
+.PHONY : src/http/ConnectionPool.cpp.o
+
+src/http/ConnectionPool.i: src/http/ConnectionPool.cpp.i
+.PHONY : src/http/ConnectionPool.i
+
+# target to preprocess a source file
+src/http/ConnectionPool.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/ConnectionPool.cpp.i
+.PHONY : src/http/ConnectionPool.cpp.i
+
+src/http/ConnectionPool.s: src/http/ConnectionPool.cpp.s
+.PHONY : src/http/ConnectionPool.s
+
+# target to generate assembly for a file
+src/http/ConnectionPool.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/ConnectionPool.cpp.s
+.PHONY : src/http/ConnectionPool.cpp.s
+
 src/http/HttpConnection.o: src/http/HttpConnection.cpp.o
 .PHONY : src/http/HttpConnection.o
 
@@ -507,6 +531,9 @@ help:
 	@echo "... src/handler.o"
 	@echo "... src/handler.i"
 	@echo "... src/handler.s"
+	@echo "... src/http/ConnectionPool.o"
+	@echo "... src/http/ConnectionPool.i"
+	@echo "... src/http/ConnectionPool.s"
 	@echo "... src/http/HttpConnection.o"
 	@echo "... src/http/HttpConnection.i"
 	@echo "... src/http/HttpConnection.s"

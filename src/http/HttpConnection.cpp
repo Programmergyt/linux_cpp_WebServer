@@ -1,4 +1,5 @@
 #include "http/HttpConnection.h"
+#include "http/BufferPool.h"
 #include "tools/tools.h"
 #include "log/log.h"
 #include <sys/sendfile.h>
@@ -12,8 +13,9 @@
 // 构造函数
 HttpConnection::HttpConnection(int sockfd, const sockaddr_in& addr, Router* router, RequestContext* context)
     : m_sockfd(sockfd), m_address(addr), m_router(router), m_context(context), m_parser("/tmp") {
-    m_read_buffer.reserve(4096);  // 预分配读缓冲区
-    m_write_buffer.reserve(4096); // 预分配写缓冲区
+    // 从缓冲区池获取缓冲区
+    m_read_buffer = BufferPool::get_instance().acquire(4096);
+    m_write_buffer = BufferPool::get_instance().acquire(4096);
     reset();
 }
 
@@ -21,18 +23,29 @@ HttpConnection::~HttpConnection() {
     if (m_file_fd != -1) {
         close(m_file_fd);
     }
+    // 将缓冲区返回池中
+    BufferPool::get_instance().release(std::move(m_read_buffer));
+    BufferPool::get_instance().release(std::move(m_write_buffer));
 }
 
 // 从socket读取数据并处理
 HttpConnection::Action HttpConnection::handle_read() {
-    // 读取数据到缓冲区
-    char temp_buffer[2048];
+    const size_t READ_CHUNK_SIZE = 4096;
     ssize_t bytes_read = 0;
     
     while (true) {
-        bytes_read = recv(m_sockfd, temp_buffer, sizeof(temp_buffer), 0);
+        // 确保缓冲区有足够空间
+        size_t old_size = m_read_buffer.size();
+        if (m_read_buffer.capacity() - old_size < READ_CHUNK_SIZE) {
+            m_read_buffer.reserve(std::max(m_read_buffer.capacity() * 2, old_size + READ_CHUNK_SIZE));
+        }
+        m_read_buffer.resize(old_size + READ_CHUNK_SIZE);
+        
+        // 直接读取到缓冲区
+        bytes_read = recv(m_sockfd, m_read_buffer.data() + old_size, READ_CHUNK_SIZE, 0);
         
         if (bytes_read == -1) {
+            m_read_buffer.resize(old_size); // 恢复原始大小
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 // 没有更多数据可读，跳出循环
                 break;
@@ -41,12 +54,13 @@ HttpConnection::Action HttpConnection::handle_read() {
             return Action::Close;
         } else if (bytes_read == 0) {
             // 客户端关闭连接
+            m_read_buffer.resize(old_size); // 恢复原始大小
             LOG_INFO("Client closed connection, fd: %d", m_sockfd);
             return Action::Close;
         }
         
-        // 将读取的数据添加到缓冲区
-        m_read_buffer.insert(m_read_buffer.end(), temp_buffer, temp_buffer + bytes_read);
+        // 调整缓冲区大小为实际读取的数据大小
+        m_read_buffer.resize(old_size + bytes_read);
     }
     
     if (m_read_buffer.empty()) {
@@ -265,8 +279,14 @@ void HttpConnection::prepare_response(const HttpResponse& response) {
         std::string response_str = header_stream.str();
         m_write_buffer.assign(response_str.begin(), response_str.end());
         
-        m_iov[0].iov_base = m_write_buffer.data();
-        m_iov[0].iov_len = m_write_buffer.size();
+        // 确保缓冲区不为空
+        if (!m_write_buffer.empty()) {
+            m_iov[0].iov_base = m_write_buffer.data();
+            m_iov[0].iov_len = m_write_buffer.size();
+        } else {
+            m_iov[0].iov_base = nullptr;
+            m_iov[0].iov_len = 0;
+        }
         m_iov_count = 1;
         
         m_bytes_to_send = m_write_buffer.size();
@@ -300,4 +320,26 @@ void HttpConnection::reset_for_keep_alive() {
 // 完全重置连接状态
 void HttpConnection::reset() {
     reset_for_keep_alive();
+}
+
+// 重新初始化连接（用于内存池复用）
+void HttpConnection::reinitialize(int sockfd, const sockaddr_in& addr, Router* router, RequestContext* context) {
+    // 关闭旧的文件描述符（如果有）
+    if (m_file_fd != -1) {
+        close(m_file_fd);
+        m_file_fd = -1;
+    }
+    
+    // 设置新的连接参数
+    m_sockfd = sockfd;
+    m_address = addr;
+    m_router = router;
+    m_context = context;
+    
+    // 重置所有状态
+    reset();
+    
+    // 清空缓冲区但保持容量
+    m_read_buffer.clear();
+    m_write_buffer.clear();
 }

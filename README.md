@@ -62,7 +62,9 @@ The requested file was not found on this server.
 本地最高水平：QPS6600，TPS：4.6MB
 
 重构版
-动态分配内存：QPS3500,TPS4.5MB
+固定预分配内存版本：QPS5000,TPS:6MB
+动态分配内存版本：QPS3500,TPS：4.5MB
+内存池动态微调版本：QPS4000,TPS：5.2MB
 
 
 常用指令

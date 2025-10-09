@@ -304,6 +304,7 @@ CMakeFiles/web_server.dir/src/webserver.cpp.o: \
  /usr/include/x86_64-linux-gnu/sys/uio.h \
  /usr/include/x86_64-linux-gnu/bits/uio_lim.h \
  /usr/include/x86_64-linux-gnu/bits/uio-ext.h \
+ /opt/my_server/include/webserver/../http/ConnectionPool.h \
  /opt/my_server/include/webserver/../log/log.h \
  /opt/my_server/include/webserver/../timer/timer.h \
  /opt/my_server/include/webserver/../timer/../tools/tools.h \

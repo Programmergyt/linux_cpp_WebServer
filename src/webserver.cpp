@@ -1,5 +1,6 @@
 #include "webserver/webserver.h"
 #include "handler/handler.h"
+#include "http/ConnectionPool.h"
 
 void WebServer::handle_action(int connfd, HttpConnection::Action action)
 {
@@ -30,8 +31,8 @@ void WebServer::handle_action(int connfd, HttpConnection::Action action)
 
     case HttpConnection::Action::Close:
         // 从 epoll 删除并关闭 fd
-        Tools::removefd(m_epollfd, connfd); 
-        LOG_DEBUG("Connection fd=%d removed from epoll by worker.", connfd);
+        Tools::removefd(m_epollfd, connfd);
+        LOG_DEBUG("Connection closed: fd=%d", connfd);
         break;
 
     default:
@@ -94,6 +95,7 @@ WebServer::~WebServer()
         m_connPool->DestroyPool();
         m_connPool = nullptr;
     }
+    
     // 释放根目录路径
     if (m_root) {
         free(m_root);
@@ -241,7 +243,7 @@ void WebServer::eventLoop()
                     LOG_INFO("New client connected: %d", connfd); // 日志
                     {
                         std::lock_guard<std::mutex> lock(m_connections_mutex);
-                        m_connections[connfd] = std::make_unique<HttpConnection>(connfd, client_addr, &m_router, &m_context);
+                        m_connections[connfd] = std::make_unique<ManagedConnection>(connfd, client_addr, &m_router, &m_context);
                     }
                 }
                 continue;
@@ -285,45 +287,50 @@ void WebServer::eventLoop()
             else if (events[i].events & EPOLLIN)
             {
                 LOG_DEBUG("EPOLLIN event on fd %d", sockfd);
-                
-                // 在主线程上锁，安全地获取裸指针
-                HttpConnection* conn = nullptr;
+                // Reactor模式
+                                // 在主线程上锁，安全地获取裸指针
+                ManagedConnection* conn = nullptr;
                 {
                     std::lock_guard<std::mutex> lock(m_connections_mutex);
                     if (m_connections[sockfd] != nullptr) {
                         conn = m_connections[sockfd].get();
                     }
                 }
-
-                // 如果连接有效，则将指针传递给工作线程
-                if (conn) {
-                    m_pool->append([this, conn]() { // *** 注意这里捕获的是 conn 指针 ***
-                        // 工作线程直接使用指针，无需任何锁
-                        HttpConnection::Action action = conn->handle_read();
-                        handle_action(conn->get_fd(), action);
-                    });
-                }
+                m_pool->append([this, sockfd, conn]()->void
+                {
+                    HttpConnection::Action action;
+                    {
+                        if (m_connections[sockfd] != nullptr && m_connections[sockfd]->valid()) {
+                            action = m_connections[sockfd]->get()->handle_read();
+                        } 
+                    }
+                    // 锁自动释放后再调用handle_action，避免死锁
+                    handle_action(sockfd, action);
+                });
             }
             else if (events[i].events & EPOLLOUT)
             {
                 LOG_DEBUG("EPOLLOUT event on sockfd: %d", sockfd);
-
+                // Reactor模式
                 // 同样，在主线程上锁，安全地获取裸指针
-                HttpConnection* conn = nullptr;
+                ManagedConnection* conn = nullptr;
                 {
                     std::lock_guard<std::mutex> lock(m_connections_mutex);
                     if (m_connections[sockfd] != nullptr) {
                         conn = m_connections[sockfd].get();
                     }
                 }
-
-                if (conn) {
-                    m_pool->append([this, conn]() { // *** 注意这里捕获的是 conn 指针 ***
-                        // 工作线程直接使用指针，无需任何锁
-                        HttpConnection::Action action = conn->handle_write();
-                        handle_action(conn->get_fd(), action);
-                    });
-                }
+                m_pool->append([this, sockfd]()
+                {
+                    HttpConnection::Action action;
+                    {
+                        if (m_connections[sockfd] != nullptr && m_connections[sockfd]->valid()) {
+                            action = m_connections[sockfd]->get()->handle_write();
+                        } 
+                    }
+                    // 锁自动释放后再调用handle_action，避免死锁
+                    handle_action(sockfd, action);
+                });
             }
         }
     }
