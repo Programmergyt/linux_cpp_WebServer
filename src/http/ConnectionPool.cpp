@@ -47,3 +47,14 @@ void ConnectionPool::release(std::unique_ptr<HttpConnection> conn) {
     
     m_in_use.fetch_sub(1);
 }
+
+void ConnectionPool::clear() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    
+    // 清空所有空闲连接，让它们自然析构
+    while (!m_free_connections.empty()) {
+        m_free_connections.pop();
+    }
+    
+    LOG_DEBUG("ConnectionPool cleared, remaining in_use: %zu", m_in_use.load());
+}

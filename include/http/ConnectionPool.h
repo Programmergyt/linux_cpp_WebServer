@@ -25,6 +25,9 @@ public:
     size_t pool_size() const { return m_free_connections.size(); }
     size_t total_created() const { return m_total_created.load(); }
     size_t in_use() const { return m_in_use.load(); }
+    
+    // 清空连接池，确保在程序退出前释放所有资源
+    void clear();
 
 private:
     ConnectionPool() = default;
@@ -37,7 +40,7 @@ private:
     std::atomic<size_t> m_total_created{0};
     std::atomic<size_t> m_in_use{0};
     
-    static constexpr size_t MAX_POOL_SIZE = 1000; // 最大池大小
+    static constexpr size_t MAX_POOL_SIZE = 10000; // 最大池大小
 };
 
 // RAII包装器，自动管理连接的获取和释放

@@ -83,7 +83,10 @@ WebServer::~WebServer()
         m_pool = nullptr;
     }
     
-    // 5. 最后销毁连接池，此时所有ManagedConnection都应该已经析构完成
+    // 4.5. 清空HTTP连接池，避免double free
+    ConnectionPool::get_instance().clear();
+    
+    // 5. 最后销毁SQL连接池，此时所有ManagedConnection都应该已经析构完成
     if (m_connPool)
     {
         m_connPool->DestroyPool();
@@ -293,12 +296,7 @@ void WebServer::eventLoop()
                 // 如果 conn_shared 有效，才派发任务
                 if (conn_shared) {
                     m_pool->append([conn_shared, this, sockfd]() { // 按值捕获 conn_shared
-                        // 在这个 lambda 内部，conn_shared 保证了 ManagedConnection 对象绝对存活
-                        // 即使主线程或其他线程 reset() 了 m_connections 里的指针，
-                        // 因为这里的拷贝还存在，引用计数不为0，对象就不会被析构。
                         HttpConnection::Action action = conn_shared->get()->handle_read();
-
-                        // handle_action 仍然使用 sockfd，因为它只是个ID
                         handle_action(sockfd, action);
                     });
                 }
@@ -319,12 +317,7 @@ void WebServer::eventLoop()
                 // 如果 conn_shared 有效，才派发任务
                 if (conn_shared) {
                     m_pool->append([conn_shared, this, sockfd]() { // 按值捕获 conn_shared
-                        // 在这个 lambda 内部，conn_shared 保证了 ManagedConnection 对象绝对存活
-                        // 即使主线程或其他线程 reset() 了 m_connections 里的指针，
-                        // 因为这里的拷贝还存在，引用计数不为0，对象就不会被析构。
                         HttpConnection::Action action = conn_shared->get()->handle_write();
-
-                        // handle_action 仍然使用 sockfd，因为它只是个ID
                         handle_action(sockfd, action);
                     });
                 }
