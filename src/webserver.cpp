@@ -4,14 +4,6 @@
 
 void WebServer::handle_action(int connfd, HttpConnection::Action action)
 {
-    // 首先检查连接是否还存在
-    {
-        std::lock_guard<std::mutex> lock(m_connections_mutex);
-        if (m_connections[connfd] == nullptr && action != HttpConnection::Action::Close) {
-            // 连接已经关闭，忽略其他操作
-            return;
-        }
-    }
 
     switch (action)
     {
@@ -53,18 +45,11 @@ WebServer::WebServer()
 }
 
 WebServer::~WebServer()
-{
-    // 关闭所有连接
-    {
-        std::lock_guard<std::mutex> lock(m_connections_mutex);
-        for (auto& conn : m_connections) {
-            if (conn) {
-                conn.reset();
-            }
-        }
-        m_connections.clear();
-    }
+{   
+    // 1. 停止服务器，防止新连接和新任务
+    stop_server = true;
     
+    // 2. 关闭监听socket和epoll，停止接受新连接
     if (m_epollfd != -1)
     {
         close(m_epollfd);
@@ -75,7 +60,6 @@ WebServer::~WebServer()
         close(m_listenfd);
         m_listenfd = -1;
     }
-    
     if (m_pipefd[1] != -1) {
         close(m_pipefd[1]);
         m_pipefd[1] = -1;
@@ -85,11 +69,21 @@ WebServer::~WebServer()
         m_pipefd[0] = -1;
     }
     
+    // 3. 先清理所有连接，确保主线程不再持有任何连接
+    {
+        std::lock_guard<std::mutex> lock(m_connections_mutex);
+        m_connections.clear();
+    }
+    
+    // 4. 然后销毁线程池，等待所有工作线程完成
+    // 工作线程中的ManagedConnection会自然析构并调用ConnectionPool::release
     if (m_pool)
     {
         delete m_pool;
         m_pool = nullptr;
     }
+    
+    // 5. 最后销毁连接池，此时所有ManagedConnection都应该已经析构完成
     if (m_connPool)
     {
         m_connPool->DestroyPool();
@@ -243,7 +237,7 @@ void WebServer::eventLoop()
                     LOG_INFO("New client connected: %d", connfd); // 日志
                     {
                         std::lock_guard<std::mutex> lock(m_connections_mutex);
-                        m_connections[connfd] = std::make_unique<ManagedConnection>(connfd, client_addr, &m_router, &m_context);
+                        m_connections[connfd] = std::make_shared<ManagedConnection>(connfd, client_addr, &m_router, &m_context);
                     }
                 }
                 continue;
@@ -288,49 +282,52 @@ void WebServer::eventLoop()
             {
                 LOG_DEBUG("EPOLLIN event on fd %d", sockfd);
                 // Reactor模式
-                                // 在主线程上锁，安全地获取裸指针
-                ManagedConnection* conn = nullptr;
+                std::shared_ptr<ManagedConnection> conn_shared;
                 {
+                    // 加锁的区域非常小，只为了安全地拷贝 shared_ptr
                     std::lock_guard<std::mutex> lock(m_connections_mutex);
-                    if (m_connections[sockfd] != nullptr) {
-                        conn = m_connections[sockfd].get();
+                    if (m_connections[sockfd]) {
+                        conn_shared = m_connections[sockfd]; // 拷贝，引用计数+1
                     }
                 }
-                m_pool->append([this, sockfd, conn]()->void
-                {
-                    HttpConnection::Action action;
-                    {
-                        if (m_connections[sockfd] != nullptr && m_connections[sockfd]->valid()) {
-                            action = m_connections[sockfd]->get()->handle_read();
-                        } 
-                    }
-                    // 锁自动释放后再调用handle_action，避免死锁
-                    handle_action(sockfd, action);
-                });
+                // 如果 conn_shared 有效，才派发任务
+                if (conn_shared) {
+                    m_pool->append([conn_shared, this, sockfd]() { // 按值捕获 conn_shared
+                        // 在这个 lambda 内部，conn_shared 保证了 ManagedConnection 对象绝对存活
+                        // 即使主线程或其他线程 reset() 了 m_connections 里的指针，
+                        // 因为这里的拷贝还存在，引用计数不为0，对象就不会被析构。
+                        HttpConnection::Action action = conn_shared->get()->handle_read();
+
+                        // handle_action 仍然使用 sockfd，因为它只是个ID
+                        handle_action(sockfd, action);
+                    });
+                }
             }
             else if (events[i].events & EPOLLOUT)
             {
                 LOG_DEBUG("EPOLLOUT event on sockfd: %d", sockfd);
                 // Reactor模式
-                // 同样，在主线程上锁，安全地获取裸指针
-                ManagedConnection* conn = nullptr;
+                // 在主线程上锁，安全地获取裸指针
+                std::shared_ptr<ManagedConnection> conn_shared;
                 {
+                    // 加锁的区域非常小，只为了安全地拷贝 shared_ptr
                     std::lock_guard<std::mutex> lock(m_connections_mutex);
-                    if (m_connections[sockfd] != nullptr) {
-                        conn = m_connections[sockfd].get();
+                    if (m_connections[sockfd]) {
+                        conn_shared = m_connections[sockfd]; // 拷贝，引用计数+1
                     }
                 }
-                m_pool->append([this, sockfd]()
-                {
-                    HttpConnection::Action action;
-                    {
-                        if (m_connections[sockfd] != nullptr && m_connections[sockfd]->valid()) {
-                            action = m_connections[sockfd]->get()->handle_write();
-                        } 
-                    }
-                    // 锁自动释放后再调用handle_action，避免死锁
-                    handle_action(sockfd, action);
-                });
+                // 如果 conn_shared 有效，才派发任务
+                if (conn_shared) {
+                    m_pool->append([conn_shared, this, sockfd]() { // 按值捕获 conn_shared
+                        // 在这个 lambda 内部，conn_shared 保证了 ManagedConnection 对象绝对存活
+                        // 即使主线程或其他线程 reset() 了 m_connections 里的指针，
+                        // 因为这里的拷贝还存在，引用计数不为0，对象就不会被析构。
+                        HttpConnection::Action action = conn_shared->get()->handle_write();
+
+                        // handle_action 仍然使用 sockfd，因为它只是个ID
+                        handle_action(sockfd, action);
+                    });
+                }
             }
         }
     }

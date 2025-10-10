@@ -31,17 +31,17 @@ void ConnectionPool::release(std::unique_ptr<HttpConnection> conn) {
         return;
     }
     
-    // 重置连接状态
-    conn->reset();
-    
     std::lock_guard<std::mutex> lock(m_mutex);
     
+    // 首先重置连接状态，确保它是一个“干净”的对象
+    conn->reset();
+    
     if (m_free_connections.size() < MAX_POOL_SIZE) {
-        // 放回池中
+        // 池未满，放回
         m_free_connections.push(std::move(conn));
         LOG_DEBUG("Connection returned to pool, pool size: %zu", m_free_connections.size());
     } else {
-        // 池已满，直接销毁
+        // 池已满，conn 将在函数退出时自动销毁
         LOG_DEBUG("Pool full, destroying connection");
     }
     
