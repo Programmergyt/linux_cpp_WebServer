@@ -27,6 +27,7 @@ wrk -t12 -c10500 -d5s -s ./scripts/post_login.lua http://192.168.72.128:8080/api
 待改进点：实现静态文件缓存（如内存缓存或 Redis 集成），减少磁盘 I/O。还是使用redis集成吧，redis适合集群部署。
 待改进点：改造为类似于 muduo 库 那样的主从 Reactor 架构 。
 待改进点：负载均衡和限流：添加请求限流（rate limiting）以防止 DDoS，使用 token bucket 算法；支持多服务器负载均衡的简单代理。
+待改进点：改为主从reactor结构，主线程异步唤醒。
 
 
 # 请求示例

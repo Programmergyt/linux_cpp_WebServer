@@ -22,19 +22,6 @@ void WebServer::handle_action(int connfd, HttpConnection::Action action)
         break;
 
     case HttpConnection::Action::Close:
-        // 清理连接和定时器
-        {
-            std::lock_guard<std::mutex> lock(m_connections_mutex);
-            m_connections[connfd].reset();
-        }
-        
-        // 删除定时器
-        if (connfd < (int)m_client_data.size() && m_client_data[connfd].timer && !m_client_data[connfd].timer_deleted) {
-            m_client_data[connfd].timer_deleted = true;
-            m_timer_manager.del_timer(m_client_data[connfd].timer);
-            m_client_data[connfd].timer = nullptr;
-        }
-        
         // 从 epoll 删除并关闭 fd
         Tools::removefd(m_epollfd, connfd);
         LOG_DEBUG("Connection closed: fd=%d", connfd);
