@@ -345,30 +345,6 @@ src/http/Router.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/Router.cpp.s
 .PHONY : src/http/Router.cpp.s
 
-src/http/http_conn.o: src/http/http_conn.cpp.o
-.PHONY : src/http/http_conn.o
-
-# target to build an object file
-src/http/http_conn.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/http_conn.cpp.o
-.PHONY : src/http/http_conn.cpp.o
-
-src/http/http_conn.i: src/http/http_conn.cpp.i
-.PHONY : src/http/http_conn.i
-
-# target to preprocess a source file
-src/http/http_conn.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/http_conn.cpp.i
-.PHONY : src/http/http_conn.cpp.i
-
-src/http/http_conn.s: src/http/http_conn.cpp.s
-.PHONY : src/http/http_conn.s
-
-# target to generate assembly for a file
-src/http/http_conn.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/http/http_conn.cpp.s
-.PHONY : src/http/http_conn.cpp.s
-
 src/log.o: src/log.cpp.o
 .PHONY : src/log.o
 
@@ -549,9 +525,6 @@ help:
 	@echo "... src/http/Router.o"
 	@echo "... src/http/Router.i"
 	@echo "... src/http/Router.s"
-	@echo "... src/http/http_conn.o"
-	@echo "... src/http/http_conn.i"
-	@echo "... src/http/http_conn.s"
 	@echo "... src/log.o"
 	@echo "... src/log.i"
 	@echo "... src/log.s"

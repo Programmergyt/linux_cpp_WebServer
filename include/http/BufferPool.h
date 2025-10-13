@@ -60,7 +60,7 @@ private:
     mutable std::mutex m_mutex;
     std::stack<std::vector<char>> m_buffers;
     
-    static constexpr size_t MAX_POOL_SIZE = 500;    // 最大池大小
-    static constexpr size_t MIN_BUFFER_SIZE = 1024; // 最小缓冲区大小
-    static constexpr size_t MAX_BUFFER_SIZE = 64 * 1024; // 最大缓冲区大小
+    static constexpr size_t MAX_POOL_SIZE = 2000;    // 最大池大小
+    static constexpr size_t MIN_BUFFER_SIZE = 4096; // 最小缓冲区大小
+    static constexpr size_t MAX_BUFFER_SIZE = 128 * 1024; // 最大缓冲区大小
 };

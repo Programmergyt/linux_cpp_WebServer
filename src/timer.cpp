@@ -1,14 +1,18 @@
 #include "timer/timer.h"
 #include <unistd.h>
 #include <iostream>
+#include <mutex>
+#include <vector>
 
 void timer_manager::add_timer(util_timer* timer) {
+    std::lock_guard<std::mutex> lock(timer_mutex);
     auto it = timers.insert({timer->expire, timer});
     index[timer] = it; // 保存索引
 }
 
 // 用法：tm.adjust_timer(t1, time(nullptr) + 4);定时器延长四秒
 void timer_manager::adjust_timer(util_timer* timer, time_t new_expire) {
+    std::lock_guard<std::mutex> lock(timer_mutex);
     auto it = index.find(timer);
     if (it == index.end()) return; // 不存在该定时器
 
@@ -24,8 +28,9 @@ void timer_manager::adjust_timer(util_timer* timer, time_t new_expire) {
 }
 
 void timer_manager::del_timer(util_timer* timer) {
+    std::lock_guard<std::mutex> lock(timer_mutex);
     auto it = index.find(timer);
-    if (it == index.end()) return;
+    if (it == index.end()) return; // 定时器已经被删除
 
     timers.erase(it->second); // 删除 multimap 节点
     index.erase(it);          // 删除索引
@@ -33,20 +38,31 @@ void timer_manager::del_timer(util_timer* timer) {
 }
 
 void timer_manager::tick() {
-    if (timers.empty()) return;
+    std::vector<util_timer*> expired_timers;
+    
+    // 在锁内收集过期的定时器
+    {
+        std::lock_guard<std::mutex> lock(timer_mutex);
+        if (timers.empty()) return;
 
-    time_t cur = time(nullptr);
-    auto it = timers.begin();
+        time_t cur = time(nullptr);
+        auto it = timers.begin();
 
-    while (it != timers.end() && it->first <= cur) {
-        util_timer* timer = it->second;
-
+        while (it != timers.end() && it->first <= cur) {
+            util_timer* timer = it->second;
+            expired_timers.push_back(timer);
+            
+            // 从索引中删除
+            index.erase(timer);
+            it = timers.erase(it); // 删除并获取下一个迭代器
+        }
+    }
+    
+    // 在锁外执行回调函数并删除定时器
+    for (util_timer* timer : expired_timers) {
         if (timer->cb_func) {
             timer->cb_func(timer->user_data);
         }
-
-        index.erase(timer);
         delete timer;
-        it = timers.erase(it); // 返回下一个
     }
 }

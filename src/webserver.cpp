@@ -22,6 +22,19 @@ void WebServer::handle_action(int connfd, HttpConnection::Action action)
         break;
 
     case HttpConnection::Action::Close:
+        // 清理连接和定时器
+        {
+            std::lock_guard<std::mutex> lock(m_connections_mutex);
+            m_connections[connfd].reset();
+        }
+        
+        // 删除定时器
+        if (connfd < (int)m_client_data.size() && m_client_data[connfd].timer && !m_client_data[connfd].timer_deleted) {
+            m_client_data[connfd].timer_deleted = true;
+            m_timer_manager.del_timer(m_client_data[connfd].timer);
+            m_client_data[connfd].timer = nullptr;
+        }
+        
         // 从 epoll 删除并关闭 fd
         Tools::removefd(m_epollfd, connfd);
         LOG_DEBUG("Connection closed: fd=%d", connfd);
@@ -39,9 +52,10 @@ WebServer::WebServer()
       m_epollfd(-1), m_listenfd(-1),
       m_connPool(nullptr),
       m_databaseURL(""), m_user(""), m_passWord(""), m_databaseName(""), m_sql_num(0),
-      m_pool(nullptr), m_thread_num(0)
+      m_pool(nullptr), m_thread_num(0), m_timeout_sec(15)
 {
     m_connections.resize(MAX_FD + 1);
+    m_client_data.resize(MAX_FD + 1);
 }
 
 WebServer::~WebServer()
@@ -69,10 +83,19 @@ WebServer::~WebServer()
         m_pipefd[0] = -1;
     }
     
-    // 3. 先清理所有连接，确保主线程不再持有任何连接
+    // 3. 先清理所有连接和定时器，确保主线程不再持有任何连接
     {
         std::lock_guard<std::mutex> lock(m_connections_mutex);
         m_connections.clear();
+    }
+    
+    // 清理所有定时器
+    for (auto& client : m_client_data) {
+        if (client.timer && !client.timer_deleted) {
+            client.timer_deleted = true;
+            m_timer_manager.del_timer(client.timer);
+            client.timer = nullptr;
+        }
     }
     
     // 4. 然后销毁线程池，等待所有工作线程完成
@@ -102,7 +125,7 @@ WebServer::~WebServer()
 
 void WebServer::init(int port, string databaseURL, string user, string passWord, string databaseName,
                      int opt_linger, int sql_num,
-                     int thread_num, int close_log)
+                     int thread_num, int close_log, int timeout_sec)
 {
     m_port = port;
     m_databaseURL = databaseURL;
@@ -112,6 +135,7 @@ void WebServer::init(int port, string databaseURL, string user, string passWord,
     m_sql_num = sql_num;
     m_thread_num = thread_num;
     m_close_log = close_log;
+    m_timeout_sec = timeout_sec;
     m_pipefd[0] = -1;
     m_pipefd[1] = -1;
     stop_server = false;
@@ -206,6 +230,9 @@ void WebServer::eventListen()
     Tools::addsig(SIGINT, Tools::sig_handler, false);
     Tools::addsig(SIGALRM, Tools::sig_handler, false);
     Tools::addsig(SIGTERM, Tools::sig_handler, false);
+    
+    // 设置定时器信号，每秒触发一次用于检查超时连接
+    alarm(1);
 }
 
 void WebServer::eventLoop()
@@ -238,19 +265,56 @@ void WebServer::eventLoop()
                     }
                     Tools::addfd(m_epollfd, connfd, true, 1);           // ET模式
                     LOG_INFO("New client connected: %d", connfd); // 日志
+                    
+                    // 创建HTTP连接对象
                     {
                         std::lock_guard<std::mutex> lock(m_connections_mutex);
                         m_connections[connfd] = std::make_shared<ManagedConnection>(connfd, client_addr, &m_router, &m_context);
                     }
+                    
+                    // 初始化客户端数据和定时器
+                    m_client_data[connfd].address = client_addr;
+                    m_client_data[connfd].sockfd = connfd;
+                    
+                    // 创建定时器
+                    util_timer* timer = new util_timer;
+                    timer->expire = time(nullptr) + m_timeout_sec;
+                    timer->user_data = &m_client_data[connfd];
+                    timer->cb_func = [this](client_data* user_data) {
+                        // 超时回调：关闭连接并清理资源
+                        if (user_data && user_data->sockfd >= 0 && !user_data->timer_deleted) {
+                            user_data->timer_deleted = true; // 标记定时器已被删除
+                            {
+                                std::lock_guard<std::mutex> lock(m_connections_mutex);
+                                m_connections[user_data->sockfd].reset();
+                            }
+                            Tools::removefd(m_epollfd, user_data->sockfd);
+                            LOG_DEBUG("Connection timeout and closed: fd=%d", user_data->sockfd);
+                            user_data->timer = nullptr; // 清空指针
+                        }
+                    };
+                    
+                    m_client_data[connfd].timer = timer;
+                    m_client_data[connfd].timer_deleted = false;
+                    m_timer_manager.add_timer(timer);
                 }
                 continue;
             }
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
+                // 清理连接和定时器
                 {
                     std::lock_guard<std::mutex> lock(m_connections_mutex);
                     m_connections[sockfd].reset();
                 }
+                
+                // 删除定时器
+                if (m_client_data[sockfd].timer && !m_client_data[sockfd].timer_deleted) {
+                    m_client_data[sockfd].timer_deleted = true;
+                    m_timer_manager.del_timer(m_client_data[sockfd].timer);
+                    m_client_data[sockfd].timer = nullptr;
+                }
+                
                 epoll_ctl(m_epollfd, EPOLL_CTL_DEL, sockfd, 0);
                 LOG_DEBUG("Client disconnected: %d", sockfd);
             }
@@ -275,6 +339,13 @@ void WebServer::eventLoop()
                             stop_server = true;
                             LOG_DEBUG("signal SIGINT on pipe fd: %d ", sockfd);
                             break;
+                        case SIGALRM:
+                            // 处理定时器到期事件
+                            m_timer_manager.tick();
+                            // 重新设置定时器
+                            alarm(1);
+                            LOG_DEBUG("Timer tick executed");
+                            break;
                         default:
                             std::cerr << "unknown signal " << sigs[i] << std::endl;
                         }
@@ -295,6 +366,12 @@ void WebServer::eventLoop()
                 }
                 // 如果 conn_shared 有效，才派发任务
                 if (conn_shared) {
+                    // 更新定时器（延长超时时间）
+                    if (m_client_data[sockfd].timer && !m_client_data[sockfd].timer_deleted) {
+                        time_t new_expire = time(nullptr) + m_timeout_sec;
+                        m_timer_manager.adjust_timer(m_client_data[sockfd].timer, new_expire);
+                    }
+                    
                     m_pool->append([conn_shared, this, sockfd]() { // 按值捕获 conn_shared
                         HttpConnection::Action action = conn_shared->get()->handle_read();
                         handle_action(sockfd, action);
@@ -316,6 +393,12 @@ void WebServer::eventLoop()
                 }
                 // 如果 conn_shared 有效，才派发任务
                 if (conn_shared) {
+                    // 更新定时器（延长超时时间）
+                    if (m_client_data[sockfd].timer && !m_client_data[sockfd].timer_deleted) {
+                        time_t new_expire = time(nullptr) + m_timeout_sec;
+                        m_timer_manager.adjust_timer(m_client_data[sockfd].timer, new_expire);
+                    }
+                    
                     m_pool->append([conn_shared, this, sockfd]() { // 按值捕获 conn_shared
                         HttpConnection::Action action = conn_shared->get()->handle_write();
                         handle_action(sockfd, action);

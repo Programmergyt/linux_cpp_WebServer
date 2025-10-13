@@ -6,6 +6,7 @@
 #include <map>
 #include <unordered_map>
 #include <functional>
+#include <mutex>
 #include "../tools/tools.h"
 
 // 定时器对象
@@ -35,6 +36,7 @@ private:
     // multimap 自动按 key (过期时间) 升序排序
     std::multimap<time_t, util_timer*> timers;
     std::unordered_map<util_timer*, std::multimap<time_t, util_timer*>::iterator> index;
+    std::mutex timer_mutex; // 保护定时器操作的互斥锁
 };
 
 #endif // TIMER_H

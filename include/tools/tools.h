@@ -13,6 +13,9 @@ struct client_data {
     sockaddr_in address; // 客户端地址
     int sockfd;          // 套接字
     util_timer* timer;   // 对应的定时器
+    bool timer_deleted;  // 标记定时器是否已被删除
+    
+    client_data() : sockfd(-1), timer(nullptr), timer_deleted(false) {}
 };
 
 class Tools {

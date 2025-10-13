@@ -19,8 +19,6 @@ file(REMOVE_RECURSE
   "CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o.d"
   "CMakeFiles/web_server.dir/src/http/Router.cpp.o"
   "CMakeFiles/web_server.dir/src/http/Router.cpp.o.d"
-  "CMakeFiles/web_server.dir/src/http/http_conn.cpp.o"
-  "CMakeFiles/web_server.dir/src/http/http_conn.cpp.o.d"
   "CMakeFiles/web_server.dir/src/log.cpp.o"
   "CMakeFiles/web_server.dir/src/log.cpp.o.d"
   "CMakeFiles/web_server.dir/src/sql_connection_pool.cpp.o"

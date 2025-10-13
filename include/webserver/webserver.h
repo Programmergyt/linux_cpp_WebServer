@@ -36,7 +36,7 @@ public:
     ~WebServer();
     void init(int port, string databaseURL, string user, string passWord, string databaseName,
               int opt_linger, int sql_num,
-              int thread_num, int close_log);
+              int thread_num, int close_log, int timeout_sec = 3);
     void eventListen();
     void eventLoop();
 
@@ -54,6 +54,11 @@ public:
     std::atomic<bool> stop_server;
     Router m_router;
     RequestContext m_context;
+
+    // 定时器相关
+    timer_manager m_timer_manager;
+    std::vector<client_data> m_client_data; // 客户端数据数组，索引对应fd
+    int m_timeout_sec; // 超时时间（秒）
 
     // 数据库相关
     connection_pool *m_connPool;
