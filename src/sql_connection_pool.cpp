@@ -50,16 +50,19 @@ MYSQL *connection_pool::GetConnection()
 {
     std::unique_lock<std::mutex> unique_lock(lock);
 
-    // 等待直到有可用的连接
-    cv.wait(unique_lock, [this]
-            { return !connList.empty(); });
-
-    MYSQL *con = connList.front();
-    connList.pop_front();
-    --m_FreeConn;
-    ++m_CurConn;
-
-    return con;
+    // 等待 10 微秒，或者直到有连接
+    if (cv.wait_for(unique_lock, std::chrono::microseconds(10), [this] { return !connList.empty(); }))
+    {
+        // 成功等到连接
+        MYSQL *con = connList.front();
+        connList.pop_front();
+        --m_FreeConn;
+        ++m_CurConn;
+        return con;
+    }
+    
+    // 超时了，仍然没有连接
+    return nullptr;
 }
 
 bool connection_pool::ReleaseConnection(MYSQL *conn)

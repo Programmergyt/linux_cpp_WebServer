@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "../web_server.pdb"
   "CMakeFiles/web_server.dir/main.cpp.o"
   "CMakeFiles/web_server.dir/main.cpp.o.d"
+  "CMakeFiles/web_server.dir/src/SubReactor.cpp.o"
+  "CMakeFiles/web_server.dir/src/SubReactor.cpp.o.d"
   "CMakeFiles/web_server.dir/src/config.cpp.o"
   "CMakeFiles/web_server.dir/src/config.cpp.o.d"
   "CMakeFiles/web_server.dir/src/handler.cpp.o"

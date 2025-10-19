@@ -17,6 +17,7 @@ chmod +x scripts/*
 ./scripts/git_save.sh
 wrk -t12 -c10500 -d5s http://192.168.72.128:8080/index.html
 wrk -t12 -c10500 -d5s -s ./scripts/post_login.lua http://192.168.72.128:8080/api/auth/login
+wrk -t12 -c10500 -d5s  http://192.168.72.128:8080/api/test
 
 ## 改进点
 改进点：固定使用reactor，listenfd使用LT,connectfd使用ET
@@ -81,4 +82,6 @@ C++ 不同编译单元（translation unit）中的静态对象析构顺序是未
 
 
 // 定时器封装出工具函数：删除定时器、更新定时器、初始化定时器。定义在tools.h里面。
+
+webserver.h、webserver.cpp、timer.h、timer.cpp
 

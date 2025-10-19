@@ -17,14 +17,19 @@
 #include <unordered_map>
 #include <algorithm>
 #include <cctype>
+#include <vector>     // 新增
+#include <thread>     // 新增
+#include <atomic>     // m_stop_server 已是 atomic
+#include <memory>     // 新增
 
 #include "../thread_pool/thread_pool.h"
-#include "../http/HttpConnection.h"
-#include "../http/ConnectionPool.h"
+#include "../http/HttpConnection.h"     // 仍需包含
+#include "../http/ConnectionPool.h"     // 仍需包含
 #include "../log/log.h"
-#include "../timer/timer.h"
+#include "../timer/timer.h"             // 仍需包含
 #include "../sql/sql_connection_pool.h"
 #include "../handler/handler.h"
+#include "SubReactor.h"                 // 新增: 包含从 Reactor
 
 const int MAX_FD = 65536;           // 最大文件描述符
 const int MAX_EVENT_NUMBER = 10000; // 最大事件数
@@ -44,32 +49,40 @@ public:
     int m_port;
     char *m_root;
     int m_close_log;
-    int m_epollfd;
+    int m_epollfd;    // 主 Reactor 的 epoll
     int m_listenfd;
     epoll_event events[MAX_EVENT_NUMBER];
-    std::vector<std::shared_ptr<ManagedConnection>> m_connections;
-    std::mutex m_connections_mutex; // 用于保护连接容器的互斥锁
-    int m_pipefd[2];
+    int m_pipefd[2];  // 主 Reactor 的信号管道
     std::atomic<bool> stop_server;
     Router m_router;
     RequestContext m_context;
-
-    // 定时器相关
-    timer_manager m_timer_manager;
-    std::vector<client_data> m_client_data; // 客户端数据数组，索引对应fd
     int m_timeout_sec; // 超时时间（秒）
 
-    // 数据库相关
+    // --- 移除的成员 ---
+    // std::vector<std::shared_ptr<ManagedConnection>> m_connections;
+    // std::mutex m_connections_mutex;
+    // timer_manager m_timer_manager;
+    // std::vector<client_data> m_client_data;
+
+    // --- 新增的成员 ---
+    int m_sub_reactor_num; // 从 Reactor 的数量
+    std::vector<SubReactor*> m_sub_reactors; // 从 Reactor 实例
+    std::vector<std::thread> m_sub_threads; // 从 Reactor 运行的线程
+    int m_round_robin_counter; // 用于轮询分发连接
+
+    // 数据库相关 (共享资源)
     connection_pool *m_connPool;
-    string m_databaseURL;  // 数据库地址
-    string m_user;         // 登陆数据库用户名
-    string m_passWord;     // 登陆数据库密码
-    string m_databaseName; // 使用数据库名
+    string m_databaseURL;
+    string m_user;
+    string m_passWord;
+    string m_databaseName;
     int m_sql_num;
 
-    // 线程池相关
+    // 线程池相关 (共享的"工作"线程池)
     thread_pool *m_pool;
-    int m_thread_num;
-    void handle_action(int connfd, HttpConnection::Action action);
+    int m_thread_num; // 工作线程池的线程数
+
+    // --- 移除的成员 ---
+    // void handle_action(int connfd, HttpConnection::Action action);
 };
 #endif

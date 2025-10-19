@@ -153,6 +153,30 @@ main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/main.cpp.s
 .PHONY : main.cpp.s
 
+src/SubReactor.o: src/SubReactor.cpp.o
+.PHONY : src/SubReactor.o
+
+# target to build an object file
+src/SubReactor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/SubReactor.cpp.o
+.PHONY : src/SubReactor.cpp.o
+
+src/SubReactor.i: src/SubReactor.cpp.i
+.PHONY : src/SubReactor.i
+
+# target to preprocess a source file
+src/SubReactor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/SubReactor.cpp.i
+.PHONY : src/SubReactor.cpp.i
+
+src/SubReactor.s: src/SubReactor.cpp.s
+.PHONY : src/SubReactor.s
+
+# target to generate assembly for a file
+src/SubReactor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/SubReactor.cpp.s
+.PHONY : src/SubReactor.cpp.s
+
 src/config.o: src/config.cpp.o
 .PHONY : src/config.o
 
@@ -501,6 +525,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... src/SubReactor.o"
+	@echo "... src/SubReactor.i"
+	@echo "... src/SubReactor.s"
 	@echo "... src/config.o"
 	@echo "... src/config.i"
 	@echo "... src/config.s"
