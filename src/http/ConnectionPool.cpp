@@ -48,6 +48,13 @@ void ConnectionPool::release(std::unique_ptr<HttpConnection> conn) {
     m_in_use.fetch_sub(1);
 }
 
+//pop会销毁unique_ptr，自动调用析构函数
+// clear()
+//  └── while (!empty()) pop()
+//       └── stack.pop()
+//            └── destroys std::unique_ptr<HttpConnection>
+//                 └── ~unique_ptr()
+//                      └── delete ptr;  // 调用 ~HttpConnection()
 void ConnectionPool::clear() {
     std::lock_guard<std::mutex> lock(m_mutex);
     

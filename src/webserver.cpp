@@ -73,7 +73,7 @@ WebServer::~WebServer()
     // 3. 先清理所有连接和定时器，确保主线程不再持有任何连接
     {
         std::lock_guard<std::mutex> lock(m_connections_mutex);
-        m_connections.clear();
+        m_connections.clear();//clear会清空数组，但不析构连接对象
     }
     
     // 清理所有定时器
@@ -93,9 +93,6 @@ WebServer::~WebServer()
         m_pool = nullptr;
     }
     
-    // 4.5. 清空HTTP连接池，避免double free
-    ConnectionPool::get_instance().clear();
-    
     // 5. 最后销毁SQL连接池，此时所有ManagedConnection都应该已经析构完成
     if (m_connPool)
     {
@@ -108,11 +105,11 @@ WebServer::~WebServer()
         free(m_root);
         m_root = nullptr;
     }
+
 }
 
 void WebServer::init(int port, string databaseURL, string user, string passWord, string databaseName,
-                     int opt_linger, int sql_num,
-                     int thread_num, int close_log, int timeout_sec)
+                     int sql_num,int thread_num, int close_log, int timeout_sec)
 {
     m_port = port;
     m_databaseURL = databaseURL;
@@ -161,7 +158,6 @@ void WebServer::init(int port, string databaseURL, string user, string passWord,
     m_router.add_route(HttpMethod::POST, "/api/login", handle_login);
     
     // 静态文件路由 - 使用正则表达式匹配各种文件扩展名
-    // 匹配常见的静态文件：html, css, js, 图片, 文档等
     m_router.add_route(HttpMethod::GET, R"(/.*\.(html|htm|css|js|json|txt|xml|csv)$)", handle_static_file);
     m_router.add_route(HttpMethod::GET, R"(/.*\.(jpg|jpeg|png|gif|bmp|webp|svg|ico)$)", handle_static_file);
     m_router.add_route(HttpMethod::GET, R"(/.*\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$)", handle_static_file);
@@ -201,9 +197,11 @@ void WebServer::eventListen()
     std::cout << "HTTP server test running on port " << m_port
               << " model=Reactor"
               << " LISTENTrigmode=LT"
-              << " CONNTrigmode=ET" << std::endl;
-
-    Tools::u_epollfd = m_epollfd;      // 设置全局 epoll fd
+              << " CONNTrigmode=ET" 
+              << " sql_num=" << m_sql_num
+              << " thread_num=" << m_thread_num
+              << " close_log=" << m_close_log
+              << std::endl;
 
     // 创建管道用于信号通知
     ret = socketpair(PF_UNIX, SOCK_STREAM, 0, m_pipefd);
@@ -251,24 +249,15 @@ void WebServer::eventLoop()
                         break;
                     }
                     Tools::addfd(m_epollfd, connfd, true, 1);           // ET模式
-                    LOG_INFO("New client connected: %d", connfd); // 日志
-                    
+                    LOG_INFO("New client connected: %d", connfd); // 日志  
                     // 创建HTTP连接对象
                     {
                         std::lock_guard<std::mutex> lock(m_connections_mutex);
                         m_connections[connfd] = std::make_shared<ManagedConnection>(connfd, client_addr, &m_router, &m_context);
                     }
-                    
-                    // 初始化客户端数据和定时器
-                    m_client_data[connfd].address = client_addr;
-                    m_client_data[connfd].sockfd = connfd;
-                    
-                    // 创建定时器
-                    util_timer* timer = new util_timer;
-                    timer->expire = time(nullptr) + m_timeout_sec;
-                    timer->user_data = &m_client_data[connfd];
-                    timer->cb_func = [this](client_data* user_data) {
-                        // 超时回调：关闭连接并清理资源
+                    // 定时器回调函数
+                    std::function<void(client_data*)> timeout_cb = [this](client_data* user_data) {
+                        // 关闭连接并清理资源
                         if (user_data && user_data->sockfd >= 0 && !user_data->timer_deleted) {
                             user_data->timer_deleted = true; // 标记定时器已被删除
                             {
@@ -280,27 +269,20 @@ void WebServer::eventLoop()
                             user_data->timer = nullptr; // 清空指针
                         }
                     };
-                    
-                    m_client_data[connfd].timer = timer;
-                    m_client_data[connfd].timer_deleted = false;
-                    m_timer_manager.add_timer(timer);
+                    // 使用工具函数初始化定时器
+                    Tools::init_timer(m_timer_manager, &m_client_data[connfd], connfd, client_addr, m_timeout_sec, timeout_cb);
                 }
                 continue;
             }
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
-                // 清理连接和定时器
+                // 清理连接
                 {
                     std::lock_guard<std::mutex> lock(m_connections_mutex);
                     m_connections[sockfd].reset();
                 }
-                
-                // 删除定时器
-                if (m_client_data[sockfd].timer && !m_client_data[sockfd].timer_deleted) {
-                    m_client_data[sockfd].timer_deleted = true;
-                    m_timer_manager.del_timer(m_client_data[sockfd].timer);
-                    m_client_data[sockfd].timer = nullptr;
-                }
+                //删除定时器
+                Tools::del_timer(m_timer_manager, &m_client_data[sockfd]);
                 
                 epoll_ctl(m_epollfd, EPOLL_CTL_DEL, sockfd, 0);
                 LOG_DEBUG("Client disconnected: %d", sockfd);
@@ -342,10 +324,9 @@ void WebServer::eventLoop()
             else if (events[i].events & EPOLLIN)
             {
                 LOG_DEBUG("EPOLLIN event on fd %d", sockfd);
-                // Reactor模式
+                // 安全拷贝conn_shared
                 std::shared_ptr<ManagedConnection> conn_shared;
                 {
-                    // 加锁的区域非常小，只为了安全地拷贝 shared_ptr
                     std::lock_guard<std::mutex> lock(m_connections_mutex);
                     if (m_connections[sockfd]) {
                         conn_shared = m_connections[sockfd]; // 拷贝，引用计数+1
@@ -354,12 +335,9 @@ void WebServer::eventLoop()
                 // 如果 conn_shared 有效，才派发任务
                 if (conn_shared) {
                     // 更新定时器（延长超时时间）
-                    if (m_client_data[sockfd].timer && !m_client_data[sockfd].timer_deleted) {
-                        time_t new_expire = time(nullptr) + m_timeout_sec;
-                        m_timer_manager.adjust_timer(m_client_data[sockfd].timer, new_expire);
-                    }
-                    
-                    m_pool->append([conn_shared, this, sockfd]() { // 按值捕获 conn_shared
+                    Tools::adjust_timer(m_timer_manager, &m_client_data[sockfd], m_timeout_sec);
+                    // 派发任务到线程池
+                    m_pool->append([conn_shared, this, sockfd]() { 
                         HttpConnection::Action action = conn_shared->get()->handle_read();
                         handle_action(sockfd, action);
                     });
@@ -368,11 +346,9 @@ void WebServer::eventLoop()
             else if (events[i].events & EPOLLOUT)
             {
                 LOG_DEBUG("EPOLLOUT event on sockfd: %d", sockfd);
-                // Reactor模式
-                // 在主线程上锁，安全地获取裸指针
+                //安全拷贝conn_shared
                 std::shared_ptr<ManagedConnection> conn_shared;
                 {
-                    // 加锁的区域非常小，只为了安全地拷贝 shared_ptr
                     std::lock_guard<std::mutex> lock(m_connections_mutex);
                     if (m_connections[sockfd]) {
                         conn_shared = m_connections[sockfd]; // 拷贝，引用计数+1
@@ -381,11 +357,8 @@ void WebServer::eventLoop()
                 // 如果 conn_shared 有效，才派发任务
                 if (conn_shared) {
                     // 更新定时器（延长超时时间）
-                    if (m_client_data[sockfd].timer && !m_client_data[sockfd].timer_deleted) {
-                        time_t new_expire = time(nullptr) + m_timeout_sec;
-                        m_timer_manager.adjust_timer(m_client_data[sockfd].timer, new_expire);
-                    }
-                    
+                    Tools::adjust_timer(m_timer_manager, &m_client_data[sockfd], m_timeout_sec);
+                    // 派发任务到线程池
                     m_pool->append([conn_shared, this, sockfd]() { // 按值捕获 conn_shared
                         HttpConnection::Action action = conn_shared->get()->handle_write();
                         handle_action(sockfd, action);

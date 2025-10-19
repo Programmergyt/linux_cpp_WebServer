@@ -10,8 +10,8 @@
 class ConnectionPool {
 public:
     static ConnectionPool& get_instance() {
-        static ConnectionPool instance;
-        return instance;
+        static ConnectionPool* instance = new ConnectionPool();
+        return *instance;  // 不在析构函数中析构，程序退出后，系统回收内存时由OS回收
     }
 
     // 获取一个HttpConnection对象
@@ -31,7 +31,7 @@ public:
 
 private:
     ConnectionPool() = default;
-    ~ConnectionPool() = default;
+    ~ConnectionPool() = default;//默认析构函数会调用m_free_connections的析构函数，从而销毁所有连接对象。
     ConnectionPool(const ConnectionPool&) = delete;
     ConnectionPool& operator=(const ConnectionPool&) = delete;
 

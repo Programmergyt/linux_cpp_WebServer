@@ -9,8 +9,8 @@
 class BufferPool {
 public:
     static BufferPool& get_instance() {
-        static BufferPool instance;
-        return instance;
+        static BufferPool* instance = new BufferPool();
+        return *instance;  // 永不析构，程序退出后由 OS 回收
     }
 
     // 获取一个缓冲区

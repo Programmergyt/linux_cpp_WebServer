@@ -3,10 +3,13 @@
 
 #include <string>
 #include <netinet/in.h>
+#include "../timer/timer.h" // 假设路径
+#include <functional>     // for std::function
 #include <unordered_map>
 #include <algorithm>
 
-class util_timer; // 前向声明，避免循环依赖
+struct util_timer;
+class timer_manager;
 
 // 客户端信息结构体
 struct client_data {
@@ -20,6 +23,7 @@ struct client_data {
 
 class Tools {
 public:
+
     // 设置文件描述符为非阻塞
     static int setnonblocking(int fd);
 
@@ -39,14 +43,8 @@ public:
     // restart: 是否启用 SA_RESTART 自动重启被中断的系统调用
     static void addsig(int sig, void(handler)(int), bool restart = true);
 
-    // 向客户端显示错误信息并关闭连接
-    static void show_error(int connfd, const char *info);
-
     // 根据给定路径递归创建父目录
     static void create_parent_dirs(const char *path);
-
-    // 定时器回调函数
-    static void timer_cb_func(client_data* user_data);
 
     //从内核时间表删除描述符
     static void removefd(int epollfd, int fd);
@@ -60,8 +58,33 @@ public:
     // 解析表单数据的辅助函数
     static std::string parse_form_field(const std::string& body, const std::string& key);
 
+    /**
+     * @brief 初始化客户端数据并创建新定时器
+     * @param tm 定时器管理器
+     * @param cd 指向要初始化的 client_data
+     * @param sockfd 客户端文件描述符
+     * @param client_addr 客户端地址
+     * @param timeout_sec 超时秒数
+     * @param callback 超时回调函数
+     */
+    static void init_timer(timer_manager &tm, client_data *cd, int sockfd, const sockaddr_in &client_addr, int timeout_sec, std::function<void(client_data *)> callback);
+
+    /**
+     * @brief 调整（延长）一个现有定时器的超时时间
+     * @param tm 定时器管理器
+     * @param cd 指向关联的客户端数据 (cd->timer 必须有效)
+     * @param timeout_sec 新的超时秒数
+     */
+    static void adjust_timer(timer_manager &tm, client_data *cd, int timeout_sec);
+
+    /**
+     * @brief 从管理器中删除一个定时器（用于非超时的主动关闭）
+     * @param tm 定时器管理器
+     * @param cd 指向关联的客户端数据 (cd->timer 必须有效)
+     */
+    static void del_timer(timer_manager &tm, client_data *cd);
+
     static int *u_pipefd;   // 管道，用于信号通知,保存socket两端的两个文件描述符fd
-    static int u_epollfd;     // 全局 epoll fd
 };
 
 #endif // TOOLS_H

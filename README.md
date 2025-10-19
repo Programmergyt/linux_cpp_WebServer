@@ -25,9 +25,8 @@ wrk -t12 -c10500 -d5s -s ./scripts/post_login.lua http://192.168.72.128:8080/api
 ## 待改进点
 
 待改进点：实现静态文件缓存（如内存缓存或 Redis 集成），减少磁盘 I/O。还是使用redis集成吧，redis适合集群部署。
-待改进点：改造为类似于 muduo 库 那样的主从 Reactor 架构 。
+待改进点：改造为类似于 muduo 库 那样的主从 Reactor 架构，主线程异步唤醒。
 待改进点：负载均衡和限流：添加请求限流（rate limiting）以防止 DDoS，使用 token bucket 算法；支持多服务器负载均衡的简单代理。
-待改进点：改为主从reactor结构，主线程异步唤醒。
 
 
 # 请求示例
@@ -76,6 +75,10 @@ pgrep -f "./server"
 scp -r C:\\Users\\Thinkbook\\Desktop\\logo.png dick@192.168.72.128:/opt/my_cpp/root/img/ 
 
 
-现在实现webserver类,注意HttpConnection的Router要能处理静态文件请求（html,图片，pdf）、登录请求、注册请求，具体逻辑在http_conn.cpp的process_write函数和do_request里面。使用epoll完成IO复用。按下controlc要能让stop_server为真并退出循环，安全析构。每次遍历epoll事件时，在线程池中处理读写和业务逻辑,注意之后根据返回的Action在主线程注册事件时要对epollctl相关操作（Tools::modfd）进行线程安全的封装，保证注册事件是线程安全的。
+HTTP连接类产生doublefree的原因：
+C++ 不同编译单元（translation unit）中的静态对象析构顺序是未定义的。
+而管理Httpconnection类的Connectionpool是静态对象，http析构时涉及的bufferpool也是静态对象，二者在不同文件，析构顺序不明。如果bufferpool先析构，connectionpool再析构时就会访问到bufferpool为空。
 
-现在实现HttpConnection类,注意HttpConnection要能处理静态文件请求（比如/index.html,图片或pdf）以及非静态文件请求（比如/api/login，返回json）。
+
+// 定时器封装出工具函数：删除定时器、更新定时器、初始化定时器。定义在tools.h里面。
+

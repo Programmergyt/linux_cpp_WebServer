@@ -35,8 +35,7 @@ public:
     WebServer();
     ~WebServer();
     void init(int port, string databaseURL, string user, string passWord, string databaseName,
-              int opt_linger, int sql_num,
-              int thread_num, int close_log, int timeout_sec = 3);
+              int sql_num,int thread_num, int close_log, int timeout_sec = 3);
     void eventListen();
     void eventLoop();
 

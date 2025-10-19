@@ -78,14 +78,6 @@ void Tools::addsig(int sig, void(handler)(int), bool restart)
     }
 }
 
-void Tools::show_error(int connfd, const char *info)
-{
-    // 向客户端发送错误消息
-    send(connfd, info, strlen(info), 0);
-    // 关闭连接
-    close(connfd);
-}
-
 void Tools::create_parent_dirs(const char *path)
 {
     std::string spath(path);
@@ -101,13 +93,6 @@ void Tools::create_parent_dirs(const char *path)
     }
 }
 
-void Tools::timer_cb_func(client_data *user_data)
-{
-    epoll_ctl(Tools::u_epollfd, EPOLL_CTL_DEL, user_data->sockfd, 0);
-    if (user_data == nullptr) return;
-    close(user_data->sockfd);
-    std::cout << "[cb_func] closed sockfd=" << user_data->sockfd << "\n";
-}
 
 void Tools::removefd(int epollfd, int fd)
 {
@@ -215,5 +200,54 @@ std::string Tools::parse_form_field(const std::string& body, const std::string& 
     return body.substr(start, end - start);
 }
 
+/**
+ * @brief 封装了 webserver.cpp 中新连接到来时的定时器初始化逻辑
+ */
+void Tools::init_timer(timer_manager &tm, client_data *cd, int sockfd, const sockaddr_in &client_addr, int timeout_sec, std::function<void(client_data *)> callback)
+{
+    if (!cd) return;
+
+    // 初始化客户端数据
+    cd->address = client_addr; //
+    cd->sockfd = sockfd;       //
+
+    // 创建定时器
+    util_timer *timer = new util_timer;
+    timer->expire = time(nullptr) + timeout_sec; //
+    timer->user_data = cd;                       //
+    timer->cb_func = callback;                   //
+
+    // 关联定时器
+    cd->timer = timer;               //
+    cd->timer_deleted = false;       //
+    tm.add_timer(timer);             //
+}
+
+/**
+ * @brief 封装了 webserver.cpp 中处理 EPOLLIN/EPOLLOUT 时的定时器调整逻辑
+ */
+void Tools::adjust_timer(timer_manager &tm, client_data *cd, int timeout_sec)
+{
+    // 检查定时器是否有效且未被标记删除
+    if (cd && cd->timer && !cd->timer_deleted) //
+    {
+        time_t new_expire = time(nullptr) + timeout_sec; //
+        tm.adjust_timer(cd->timer, new_expire);          //
+    }
+}
+
+/**
+ * @brief 封装了 webserver.cpp 中处理 EPOLLRDHUP/HUP/ERR 时的定时器删除逻辑
+ */
+void Tools::del_timer(timer_manager &tm, client_data *cd)
+{
+    // 检查定时器是否有效且未被标记删除
+    if (cd && cd->timer && !cd->timer_deleted) //
+    {
+        cd->timer_deleted = true;      //
+        tm.del_timer(cd->timer);       //
+        cd->timer = nullptr;           //
+    }
+}
+
 int *Tools::u_pipefd = nullptr;
-int Tools::u_epollfd = 0;
