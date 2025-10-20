@@ -1,7 +1,7 @@
 #include "http/HttpConnection.h"
 #include "http/BufferPool.h"
-#include "tools/tools.h"
-#include "log/log.h"
+#include "tools/Tools.h"
+#include "log/Log.h"
 #include <sys/sendfile.h>
 #include <unistd.h>
 #include <fcntl.h>

@@ -6,12 +6,12 @@
 #include <map>
 #include <vector>
 #include <regex>
-#include "../sql/sql_connection_pool.h"
+#include "../sql/SqlConnectionPool.h"
 
 // 请求上下文，可以传递数据库连接池、配置等资源
 class RequestContext {
 public:
-    connection_pool* db_pool;
+    SqlConnectionPool* db_pool;
     const char* doc_root;
 };
 

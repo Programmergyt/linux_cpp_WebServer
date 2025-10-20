@@ -22,14 +22,12 @@
 #include <atomic>     // m_stop_server 已是 atomic
 #include <memory>     // 新增
 
-#include "../thread_pool/thread_pool.h"
-#include "../http/HttpConnection.h"     // 仍需包含
-#include "../http/ConnectionPool.h"     // 仍需包含
-#include "../log/log.h"
-#include "../timer/timer.h"             // 仍需包含
-#include "../sql/sql_connection_pool.h"
-#include "../handler/handler.h"
-#include "SubReactor.h"                 // 新增: 包含从 Reactor
+#include "../thread_pool/ThreadPool.h"
+#include "../log/Log.h"
+#include "../timer/Timer.h"             
+#include "../sql/SqlConnectionPool.h"
+#include "../handler/Handler.h"
+#include "SubReactor.h"                 // 包含从 Reactor
 
 const int MAX_FD = 65536;           // 最大文件描述符
 const int MAX_EVENT_NUMBER = 10000; // 最大事件数
@@ -39,9 +37,27 @@ class WebServer
 public:
     WebServer();
     ~WebServer();
+    /**
+     * @brief 初始化 Web 服务器
+     * @param port 监听端口
+     * @param databaseURL 数据库连接 URL
+     * @param user 数据库用户名
+     * @param passWord 数据库密码
+     * @param databaseName 数据库名称
+     * @param sql_num 数据库连接池大小
+     * @param thread_num 工作线程池线程数
+     * @param close_log 日志开关
+     * @param timeout_sec 连接超时时间（秒）
+     */
     void init(int port, string databaseURL, string user, string passWord, string databaseName,
               int sql_num,int thread_num, int close_log, int timeout_sec = 3);
+    /**
+     * @brief 开始监听事件
+     */
     void eventListen();
+    /**
+     * @brief 事件循环
+     */
     void eventLoop();
 
 public:
@@ -58,31 +74,23 @@ public:
     RequestContext m_context;
     int m_timeout_sec; // 超时时间（秒）
 
-    // --- 移除的成员 ---
-    // std::vector<std::shared_ptr<ManagedConnection>> m_connections;
-    // std::mutex m_connections_mutex;
-    // timer_manager m_timer_manager;
-    // std::vector<client_data> m_client_data;
-
-    // --- 新增的成员 ---
+    // 从 Reactor 相关
     int m_sub_reactor_num; // 从 Reactor 的数量
     std::vector<SubReactor*> m_sub_reactors; // 从 Reactor 实例
     std::vector<std::thread> m_sub_threads; // 从 Reactor 运行的线程
     int m_round_robin_counter; // 用于轮询分发连接
 
     // 数据库相关 (共享资源)
-    connection_pool *m_connPool;
+    SqlConnectionPool *m_connPool;
     string m_databaseURL;
     string m_user;
     string m_passWord;
     string m_databaseName;
     int m_sql_num;
 
-    // 线程池相关 (共享的"工作"线程池)
-    thread_pool *m_pool;
+    // 线程池相关 (与SubReactor共享的"工作"线程池)
+    ThreadPool *m_pool;
     int m_thread_num; // 工作线程池的线程数
 
-    // --- 移除的成员 ---
-    // void handle_action(int connfd, HttpConnection::Action action);
 };
-#endif
+#endif // WEBSERVER_H

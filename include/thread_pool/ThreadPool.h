@@ -11,16 +11,32 @@
 #include <exception>
 #include <chrono>
 
-class thread_pool
+class ThreadPool
 {
 public:
     using Task = std::function<void()>;
 
-    thread_pool(int thread_number = 8, int max_requests = 10000, int shutdown_timeout = 2);
-    ~thread_pool();
+    /**
+     * @brief 构造函数，初始化线程池
+     * @param thread_number 线程池中的线程数量
+     * @param max_requests 任务队列的最大请求数
+     * @param shutdown_timeout 析构时等待线程结束的超时时间（秒）
+     */
+    ThreadPool(int thread_number = 8, int max_requests = 10000, int shutdown_timeout = 2);
+
+    ~ThreadPool();
+
+    /**
+     * @brief 向线程池添加任务
+     * @param task 需要添加的任务
+     * @return 成功返回 true，失败返回 false
+     */
     bool append(Task task);
 
 private:
+    /** 
+     * @brief 线程运行的函数
+    */
     void run();
 
 private:
@@ -34,4 +50,4 @@ private:
     int m_shutdown_timeout;              // 析构等待的超时时间（秒）
 };
 
-#endif
+#endif // THREAD_POOL_H

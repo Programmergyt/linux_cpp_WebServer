@@ -1,17 +1,16 @@
-#include "timer/timer.h"
+#include "timer/Timer.h"
 #include <unistd.h>
 #include <iostream>
 #include <mutex>
 #include <vector>
 
-void timer_manager::add_timer(util_timer* timer) {
+void TimerManager::add_timer(util_timer* timer) {
     std::lock_guard<std::mutex> lock(timer_mutex);
     auto it = timers.insert({timer->expire, timer});
     index[timer] = it; // 保存索引
 }
 
-// 用法：tm.adjust_timer(t1, time(nullptr) + 4);定时器延长四秒
-void timer_manager::adjust_timer(util_timer* timer, time_t new_expire) {
+void TimerManager::adjust_timer(util_timer* timer, time_t new_expire) {
     std::lock_guard<std::mutex> lock(timer_mutex);
     auto it = index.find(timer);
     if (it == index.end()) return; // 不存在该定时器
@@ -27,7 +26,7 @@ void timer_manager::adjust_timer(util_timer* timer, time_t new_expire) {
     it->second = new_it;
 }
 
-void timer_manager::del_timer(util_timer* timer) {
+void TimerManager::del_timer(util_timer* timer) {
     std::lock_guard<std::mutex> lock(timer_mutex);
     auto it = index.find(timer);
     if (it == index.end()) return; // 定时器已经被删除
@@ -37,7 +36,7 @@ void timer_manager::del_timer(util_timer* timer) {
     delete timer;
 }
 
-void timer_manager::tick() {
+void TimerManager::tick() {
     std::vector<util_timer*> expired_timers;
     
     // 在锁内收集过期的定时器

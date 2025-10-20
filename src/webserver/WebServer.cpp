@@ -1,9 +1,7 @@
-#include "webserver/webserver.h"
-#include "handler/handler.h"
-#include "http/ConnectionPool.h"
-#include <thread> // 包含 thread
-
-// handle_action 函数已移至 SubReactor.cpp
+#include "webserver/WebServer.h"
+#include "handler/Handler.h"
+#include "http/HttpConnectionPool.h"
+#include <thread>
 
 WebServer::WebServer()
     : m_port(0), m_root(nullptr), m_close_log(0),
@@ -99,11 +97,11 @@ void WebServer::init(int port, string databaseURL, string user, string passWord,
     m_round_robin_counter = 0;
 
     // 1. 初始化数据库连接池 (共享)
-    m_connPool = connection_pool::GetInstance();
+    m_connPool = SqlConnectionPool::GetInstance();
     m_connPool->init(m_databaseURL, m_user, m_passWord, m_databaseName, 3306, m_sql_num, close_log);
 
     // 2. 初始化 *工作* 线程池 (共享)
-    m_pool = new thread_pool(m_thread_num, 10000);
+    m_pool = new ThreadPool(m_thread_num, 10000);
 
     // 3. 初始化日志
     Log::get_instance()->init("./record/ServerLog", m_close_log, 2000, 800000, 1000);
@@ -111,7 +109,7 @@ void WebServer::init(int port, string databaseURL, string user, string passWord,
 
     // 4. 初始化 root 路径
     char server_path[200];
-    if (getcwd(server_path, 200) == nullptr) { /* ... 错误处理 ... */ }
+    if (getcwd(server_path, 200) == nullptr) { perror("getcwd error"); exit(EXIT_FAILURE); }
     char root[6] = "/root";
     m_root = (char *)malloc(strlen(server_path) + strlen(root) + 1);
     strcpy(m_root, server_path);
@@ -172,13 +170,13 @@ void WebServer::eventListen()
     address.sin_port = htons(m_port);
 
     int ret = bind(m_listenfd, (struct sockaddr *)&address, sizeof(address));
-    if (ret < 0) { perror("bind error：端口已经被占用"); exit(EXIT_FAILURE); }
+    if (ret < 0) { perror("bind error: 端口已经被占用"); exit(EXIT_FAILURE); }
     ret = listen(m_listenfd, 5);
-    if (ret < 0) { perror("listen error：监听失败"); exit(EXIT_FAILURE); }
+    if (ret < 0) { perror("listen error: 监听失败"); exit(EXIT_FAILURE); }
 
     // 主 Reactor 的 epoll
     m_epollfd = epoll_create(5);
-    if (m_epollfd == -1) { perror("epoll_create error：Epoll创建失败"); exit(EXIT_FAILURE); }
+    if (m_epollfd == -1) { perror("epoll_create error: Epoll创建失败"); exit(EXIT_FAILURE); }
 
     // 只把 m_listenfd 纳入主 epoll 监听 (LT模式)
     Tools::addfd(m_epollfd, m_listenfd, false, 0);
@@ -188,14 +186,14 @@ void WebServer::eventListen()
               << " | WorkerThreads=" << m_thread_num
               << std::endl;
 
-    // 创建 *主 Reactor* 的信号管道
+    // 创建 主 Reactor 的信号管道
     ret = socketpair(PF_UNIX, SOCK_STREAM, 0, m_pipefd);
-    if (ret == -1) { /* ... 错误处理 ... */ }
+    if (ret == -1) { std::cerr << "socketpair error" << std::endl; exit(EXIT_FAILURE); }
     Tools::u_pipefd = m_pipefd; // Tools 静态成员指向此管道
     Tools::setnonblocking(m_pipefd[0]);
     Tools::setnonblocking(m_pipefd[1]);
     
-    // 只把 *主 Reactor* 的信号管道读端加入 *主 epoll*
+    // 只把 主 Reactor 的信号管道读端加入 主 epoll
     Tools::addfd(m_epollfd, m_pipefd[0], false, 0); // LT模式
 
     // 设置信号处理函数
@@ -213,14 +211,13 @@ void WebServer::eventLoop()
     LOG_INFO("MainReactor: Event loop starting...");
     while (!stop_server)
     {
-        // 只等待 m_listenfd 和 m_pipefd[0]
+        // 等待 m_listenfd 和 m_pipefd[0]
         int num = epoll_wait(m_epollfd, events, MAX_EVENT_NUMBER, -1);
         if (num < 0 && errno != EINTR)
         {
             LOG_ERROR("MainReactor: epoll failure");
             break;
         }
-
         for (int i = 0; i < num; ++i)
         {
             int sockfd = events[i].data.fd;
@@ -249,7 +246,7 @@ void WebServer::eventLoop()
                     int pipe_fd = m_sub_reactors[sub_index]->getPipeFd();
                     int msg = connfd; // 消息就是 connfd
                     
-                    // 将 connfd 写入 SubReactor 的管道
+                    // 将 connfd 写入 SubReactor 的管道，由SubReactor处理
                     write(pipe_fd, &msg, sizeof(msg));
                     
                     LOG_DEBUG("MainReactor: Dispatched fd %d to SubReactor %d", connfd, sub_index);
@@ -299,7 +296,7 @@ void WebServer::eventLoop()
                     }
                 }
             }
-            // 主 Reactor 不应收到其他事件
+            // 主 Reactor 不应收到其他事件，防御性编程
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
                 LOG_ERROR("MainReactor: Unexpected event (ERR/HUP) on fd %d", sockfd);

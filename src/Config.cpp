@@ -1,4 +1,4 @@
-#include "config/config.h"
+#include "config/Config.h"
 #include <iostream>
 #include <unistd.h>
 using namespace std;

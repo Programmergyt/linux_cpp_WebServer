@@ -3,13 +3,13 @@
 
 #include <string>
 #include <netinet/in.h>
-#include "../timer/timer.h" // 假设路径
+#include "../timer/Timer.h" // 假设路径
 #include <functional>     // for std::function
 #include <unordered_map>
 #include <algorithm>
 
 struct util_timer;
-class timer_manager;
+class TimerManager;
 
 // 客户端信息结构体
 struct client_data {
@@ -24,23 +24,34 @@ struct client_data {
 class Tools {
 public:
 
-    // 设置文件描述符为非阻塞
+    /**
+     * @brief 设置文件描述符为非阻塞
+     * @param fd 需要设置的文件描述符
+     * @return 成功返回 0，失败返回 -1
+     */
     static int setnonblocking(int fd);
 
-    // 向 epoll 实例中注册文件描述符
-    // epollfd: epoll 实例
-    // fd: 待注册的文件描述符
-    // one_shot: 是否启用 EPOLLONESHOT
-    // TRIGMode: 触发模式 (0 = LT, 1 = ET)
+    /**
+     * @brief 向 epoll 实例中注册文件描述符
+     * @param epollfd epoll 实例的文件描述符
+     * @param fd 需要注册的文件描述符
+     * @param one_shot 是否启用 EPOLLONESHOT 模式
+     * @param TRIGMode 触发模式 (0 = LT, 1 = ET)
+     */
     static void addfd(int epollfd, int fd, bool one_shot, int TRIGMode);
 
-    // 信号处理函数（接收到信号时调用）
+    /**
+     * @brief 信号处理函数
+     * @param sig 信号编号
+     */
     static void sig_handler(int sig);
 
-    // 注册信号处理函数
-    // sig: 信号编号
-    // handler: 信号处理函数
-    // restart: 是否启用 SA_RESTART 自动重启被中断的系统调用
+    /** 
+     * @brief 注册信号处理函数
+     * @param sig 信号编号
+     * @param handler 信号处理函数
+     * @param restart 是否启用 SA_RESTART 自动重启被中断的系统调用
+     */
     static void addsig(int sig, void(handler)(int), bool restart = true);
 
     // 根据给定路径递归创建父目录
@@ -67,7 +78,7 @@ public:
      * @param timeout_sec 超时秒数
      * @param callback 超时回调函数
      */
-    static void init_timer(timer_manager &tm, client_data *cd, int sockfd, const sockaddr_in &client_addr, int timeout_sec, std::function<void(client_data *)> callback);
+    static void init_timer(TimerManager &tm, client_data *cd, int sockfd, const sockaddr_in &client_addr, int timeout_sec, std::function<void(client_data *)> callback);
 
     /**
      * @brief 调整（延长）一个现有定时器的超时时间
@@ -75,14 +86,14 @@ public:
      * @param cd 指向关联的客户端数据 (cd->timer 必须有效)
      * @param timeout_sec 新的超时秒数
      */
-    static void adjust_timer(timer_manager &tm, client_data *cd, int timeout_sec);
+    static void adjust_timer(TimerManager &tm, client_data *cd, int timeout_sec);
 
     /**
      * @brief 从管理器中删除一个定时器（用于非超时的主动关闭）
      * @param tm 定时器管理器
      * @param cd 指向关联的客户端数据 (cd->timer 必须有效)
      */
-    static void del_timer(timer_manager &tm, client_data *cd);
+    static void del_timer(TimerManager &tm, client_data *cd);
 
     static int *u_pipefd;   // 管道，用于信号通知,保存socket两端的两个文件描述符fd
 };

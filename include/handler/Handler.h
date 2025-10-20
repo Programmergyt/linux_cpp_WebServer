@@ -4,7 +4,7 @@
 #include "http/HttpRequest.h"
 #include "http/HttpResponse.h"
 #include "http/Router.h"
-#include "sql/sql_connection_pool.h"
+#include "sql/SqlConnectionPool.h"
 #include <string>
 
 /**

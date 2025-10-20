@@ -16,17 +16,19 @@ chmod +x scripts/*
 ./scripts/pressure_test_run.sh
 ./scripts/git_save.sh
 wrk -t12 -c10500 -d5s http://192.168.72.128:8080/index.html
-wrk -t12 -c10500 -d5s -s ./scripts/post_login.lua http://192.168.72.128:8080/api/auth/login
-wrk -t12 -c10500 -d5s  http://192.168.72.128:8080/api/test
+wrk -t12 -c105 -d5s -s ./scripts/post_login.lua http://192.168.72.128:8080/api/auth/login
+wrk -t12 -c1050 -d25s  http://192.168.72.128:8080/api/test
+
+## webserver应用:基于C++的高并发WebServer的AI任务分发平台
+【AI 聊天服务集成：在 C++ 框架中调用大模型 API，实现多轮对话与会话记忆。 AI 图像识别服务：结合 OpenCV + ONNX Runtime，完成图像预处理与推理全流程。 高并发架构设计：利用 RabbitMQ + 线程池，提升系统在多用户场景下的并发处理能力。 工程化能力：熟悉 Docker 部署、消息队列解耦、数据库异步写入等服务化开发经验。】
 
 ## 改进点
 改进点：固定使用reactor，listenfd使用LT,connectfd使用ET
-改为主从reactor结构
+改进点：主从 Reactor 架构，主线程异步唤醒。
 
 ## 待改进点
-
 待改进点：实现静态文件缓存（如内存缓存或 Redis 集成），减少磁盘 I/O。还是使用redis集成吧，redis适合集群部署。
-待改进点：改造为类似于 muduo 库 那样的主从 Reactor 架构，主线程异步唤醒。
+待改进点：rabbitMQ可以和我的handler文件结合起来，handler发布task，然后我再写一个worker文件，完成handler发布的task，不需要和其它文件耦合
 待改进点：负载均衡和限流：添加请求限流（rate limiting）以防止 DDoS，使用 token bucket 算法；支持多服务器负载均衡的简单代理。
 
 

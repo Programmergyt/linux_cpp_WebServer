@@ -1,4 +1,4 @@
-#include "tools/tools.h"
+#include "tools/Tools.h"
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
@@ -203,7 +203,7 @@ std::string Tools::parse_form_field(const std::string& body, const std::string& 
 /**
  * @brief 封装了 webserver.cpp 中新连接到来时的定时器初始化逻辑
  */
-void Tools::init_timer(timer_manager &tm, client_data *cd, int sockfd, const sockaddr_in &client_addr, int timeout_sec, std::function<void(client_data *)> callback)
+void Tools::init_timer(TimerManager &tm, client_data *cd, int sockfd, const sockaddr_in &client_addr, int timeout_sec, std::function<void(client_data *)> callback)
 {
     if (!cd) return;
 
@@ -226,7 +226,7 @@ void Tools::init_timer(timer_manager &tm, client_data *cd, int sockfd, const soc
 /**
  * @brief 封装了 webserver.cpp 中处理 EPOLLIN/EPOLLOUT 时的定时器调整逻辑
  */
-void Tools::adjust_timer(timer_manager &tm, client_data *cd, int timeout_sec)
+void Tools::adjust_timer(TimerManager &tm, client_data *cd, int timeout_sec)
 {
     // 检查定时器是否有效且未被标记删除
     if (cd && cd->timer && !cd->timer_deleted) //
@@ -239,7 +239,7 @@ void Tools::adjust_timer(timer_manager &tm, client_data *cd, int timeout_sec)
 /**
  * @brief 封装了 webserver.cpp 中处理 EPOLLRDHUP/HUP/ERR 时的定时器删除逻辑
  */
-void Tools::del_timer(timer_manager &tm, client_data *cd)
+void Tools::del_timer(TimerManager &tm, client_data *cd)
 {
     // 检查定时器是否有效且未被标记删除
     if (cd && cd->timer && !cd->timer_deleted) //

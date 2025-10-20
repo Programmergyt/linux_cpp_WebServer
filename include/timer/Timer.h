@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <functional>
 #include <mutex>
-#include "../tools/tools.h"
+#include "../tools/Tools.h"
 
 // 前向声明，避免循环依赖
 struct client_data;
@@ -19,24 +19,35 @@ struct util_timer {
     client_data* user_data;                      // 客户端数据指针
 };
 
-// 定时器管理器，基于 multimap 管理定时器
-class timer_manager 
+// 基于 multimap 的定时器管理器
+class TimerManager 
 {
 public:
-    // 添加一个定时器
+    /**
+     * @brief 添加定时器
+     * @param timer 需要添加的定时器指针
+     */
     void add_timer(util_timer* timer);
 
-    // 调整定时器（例如延长时间）
+    /**
+     * @brief 调整定时器的过期时间
+     * @param timer 需要调整的定时器指针
+     * @param new_expire 新的过期时间
+     */
     void adjust_timer(util_timer* timer, time_t new_expire);
 
-    // 删除定时器
+    /**
+     * @brief 删除定时器
+     * @param timer 需要删除的定时器指针
+     */
     void del_timer(util_timer* timer);
 
-    // 执行过期定时器（tick）
+    /**
+     * @brief 更新时间，并处理到期的定时器
+     */
     void tick();
 
 private:
-    // multimap 自动按 key (过期时间) 升序排序
     std::multimap<time_t, util_timer*> timers;
     std::unordered_map<util_timer*, std::multimap<time_t, util_timer*>::iterator> index;
     std::mutex timer_mutex; // 保护定时器操作的互斥锁

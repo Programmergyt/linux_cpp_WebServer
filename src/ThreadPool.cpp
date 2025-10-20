@@ -1,7 +1,6 @@
-#include "thread_pool/thread_pool.h"
+#include "thread_pool/ThreadPool.h"
 
-// 构造函数
-thread_pool::thread_pool(int thread_number, int max_requests, int shutdown_timeout)
+ThreadPool::ThreadPool(int thread_number, int max_requests, int shutdown_timeout)
     : m_thread_number(thread_number),
       m_max_requests(max_requests),
       m_stop(false),
@@ -13,11 +12,11 @@ thread_pool::thread_pool(int thread_number, int max_requests, int shutdown_timeo
     m_threads.reserve(thread_number);
     for (int i = 0; i < thread_number; ++i)
     {
-        m_threads.emplace_back(&thread_pool::run, this);
+        m_threads.emplace_back(&ThreadPool::run, this);
     }
 }
 
-thread_pool::~thread_pool()
+ThreadPool::~ThreadPool()
 {
     // 通知所有线程退出
     {
@@ -45,7 +44,7 @@ thread_pool::~thread_pool()
     }
 }
 
-bool thread_pool::append(Task task)
+bool ThreadPool::append(Task task)
 {
     {
         std::unique_lock<std::mutex> lock(m_queuelocker);
@@ -59,7 +58,7 @@ bool thread_pool::append(Task task)
     return true;
 }
 
-void thread_pool::run()
+void ThreadPool::run()
 {
     while (true)
     {

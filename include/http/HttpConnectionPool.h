@@ -1,16 +1,17 @@
 #pragma once
 
 #include "HttpConnection.h"
+#include "log/Log.h"
 #include <memory>
 #include <stack>
 #include <mutex>
 #include <atomic>
 #include <vector>
 
-class ConnectionPool {
+class HttpConnectionPool {
 public:
-    static ConnectionPool& get_instance() {
-        static ConnectionPool* instance = new ConnectionPool();
+    static HttpConnectionPool& get_instance() {
+        static HttpConnectionPool* instance = new HttpConnectionPool();
         return *instance;  // 不在析构函数中析构，程序退出后，系统回收内存时由OS回收
     }
 
@@ -30,10 +31,10 @@ public:
     void clear();
 
 private:
-    ConnectionPool() = default;
-    ~ConnectionPool() = default;//默认析构函数会调用m_free_connections的析构函数，从而销毁所有连接对象。
-    ConnectionPool(const ConnectionPool&) = delete;
-    ConnectionPool& operator=(const ConnectionPool&) = delete;
+    HttpConnectionPool() = default;
+    ~HttpConnectionPool() = default;//默认析构函数会调用m_free_connections的析构函数，从而销毁所有连接对象。
+    HttpConnectionPool(const HttpConnectionPool&) = delete;
+    HttpConnectionPool& operator=(const HttpConnectionPool&) = delete;
 
     mutable std::mutex m_mutex;
     std::stack<std::unique_ptr<HttpConnection>> m_free_connections;
@@ -47,11 +48,11 @@ private:
 class ManagedConnection {
 public:
     ManagedConnection(int sockfd, const sockaddr_in& addr, Router* router, RequestContext* context)
-        : m_conn(ConnectionPool::get_instance().acquire(sockfd, addr, router, context)) {}
+        : m_conn(HttpConnectionPool::get_instance().acquire(sockfd, addr, router, context)) {}
     
     ~ManagedConnection() {
         if (m_conn) {
-            ConnectionPool::get_instance().release(std::move(m_conn));
+            HttpConnectionPool::get_instance().release(std::move(m_conn));
         }
     }
     
@@ -60,7 +61,7 @@ public:
     ManagedConnection& operator=(ManagedConnection&& other) noexcept {
         if (this != &other) {
             if (m_conn) {
-                ConnectionPool::get_instance().release(std::move(m_conn));
+                HttpConnectionPool::get_instance().release(std::move(m_conn));
             }
             m_conn = std::move(other.m_conn);
         }
@@ -80,7 +81,7 @@ public:
     // 提前释放连接
     void release() {
         if (m_conn) {
-            ConnectionPool::get_instance().release(std::move(m_conn));
+            HttpConnectionPool::get_instance().release(std::move(m_conn));
         }
     }
 

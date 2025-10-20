@@ -1,19 +1,19 @@
-#include "sql/sql_connection_pool.h"
+#include "sql/SqlConnectionPool.h"
 
-connection_pool *connection_pool::GetInstance()
+SqlConnectionPool *SqlConnectionPool::GetInstance()
 {
-    static connection_pool instance;
+    static SqlConnectionPool instance;
     return &instance;
 }
 
-connection_pool::connection_pool()
+SqlConnectionPool::SqlConnectionPool()
 {
     m_CurConn = 0;
     m_FreeConn = 0;
 }
 
 // 构造初始化
-void connection_pool::init(string url, string User, string PassWord, string DBName, int Port, int MaxConn, int close_log)
+void SqlConnectionPool::init(string url, string User, string PassWord, string DBName, int Port, int MaxConn, int close_log)
 {
     m_url = url;
     m_Port = Port;
@@ -46,26 +46,22 @@ void connection_pool::init(string url, string User, string PassWord, string DBNa
     m_MaxConn = m_FreeConn;
 }
 
-MYSQL *connection_pool::GetConnection()
+MYSQL *SqlConnectionPool::GetConnection()
 {
     std::unique_lock<std::mutex> unique_lock(lock);
 
-    // 等待 10 微秒，或者直到有连接
-    if (cv.wait_for(unique_lock, std::chrono::microseconds(10), [this] { return !connList.empty(); }))
-    {
-        // 成功等到连接
-        MYSQL *con = connList.front();
-        connList.pop_front();
-        --m_FreeConn;
-        ++m_CurConn;
-        return con;
-    }
+    cv.wait(unique_lock, [this] { return !connList.empty(); });
+
+    MYSQL *con = connList.front();
+    connList.pop_front();
+    --m_FreeConn;
+    ++m_CurConn;
     
-    // 超时了，仍然没有连接
-    return nullptr;
+    // 永远不会返回 nullptr（除非程序初始化失败）
+    return con;
 }
 
-bool connection_pool::ReleaseConnection(MYSQL *conn)
+bool SqlConnectionPool::ReleaseConnection(MYSQL *conn)
 {
     if (conn == NULL)
         return false;
@@ -81,7 +77,7 @@ bool connection_pool::ReleaseConnection(MYSQL *conn)
     return true;
 }
 
-void connection_pool::DestroyPool()
+void SqlConnectionPool::DestroyPool()
 {
     std::lock_guard<std::mutex> lock_guard(lock);
     if (!connList.empty())
@@ -97,19 +93,19 @@ void connection_pool::DestroyPool()
     }
 }
 
-int connection_pool::GetFreeConn()
+int SqlConnectionPool::GetFreeConn()
 {
     std::lock_guard<std::mutex> lock_guard(lock);
     return m_FreeConn;
 }
 
-connection_pool::~connection_pool()
+SqlConnectionPool::~SqlConnectionPool()
 {
     DestroyPool();
 }
 
 // 传入双重指针为的是改变指针指向的值，返回一个连接
-connectionRAII::connectionRAII(MYSQL **con, connection_pool *connPool)
+connectionRAII::connectionRAII(MYSQL **con, SqlConnectionPool *connPool)
 {
     *con = connPool->GetConnection();
     conRAII = *con;

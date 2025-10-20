@@ -1,5 +1,5 @@
-#include "webserver/webserver.h"
-#include "config/config.h"
+#include "webserver/WebServer.h"
+#include "config/Config.h"
 
 int main(int argc, char *argv[])
 {

@@ -1,4 +1,4 @@
-#include "log/log.h"
+#include "log/Log.h"
 #include <ctime>
 #include <cstdarg>
 #include <cstdio>
@@ -109,7 +109,7 @@ bool Log::init(const char* file_name, int close_log,
 
     if (max_queue_size >= 1) {
         m_is_async   = true;
-        m_log_queue  = new block_queue<std::string>(max_queue_size);
+        m_log_queue  = new BlockQueue<std::string>(max_queue_size);
         m_thread     = std::thread(&Log::thread_func, this);
     }
 

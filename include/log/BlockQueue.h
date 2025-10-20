@@ -6,21 +6,21 @@
 #include <vector>
 
 template <class T>
-class block_queue {
+class BlockQueue {
 public:
 
-    explicit block_queue(size_t max_size = 1000)
+    explicit BlockQueue(size_t max_size = 1000)
         : m_front(0), m_back(0), m_array(max_size),m_max_size(max_size), m_size(0)  {
         if (max_size <= 0) {
             throw std::invalid_argument("max_size must be greater than 0");
         }
     }
 
-    ~block_queue() = default;
+    ~BlockQueue() = default;
 
     // 禁止拷贝和赋值
-    block_queue(const block_queue&) = delete;
-    block_queue& operator=(const block_queue&) = delete;
+    BlockQueue(const BlockQueue&) = delete;
+    BlockQueue& operator=(const BlockQueue&) = delete;
 
     // push: 队列满时阻塞等待
     void push(const T& item) {

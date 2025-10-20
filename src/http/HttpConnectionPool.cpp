@@ -1,7 +1,7 @@
-#include "http/ConnectionPool.h"
-#include "log/log.h"
+#include "http/HttpConnectionPool.h"
 
-std::unique_ptr<HttpConnection> ConnectionPool::acquire(int sockfd, const sockaddr_in& addr, 
+
+std::unique_ptr<HttpConnection> HttpConnectionPool::acquire(int sockfd, const sockaddr_in& addr, 
                                                        Router* router, RequestContext* context) {
     std::lock_guard<std::mutex> lock(m_mutex);
     
@@ -26,7 +26,7 @@ std::unique_ptr<HttpConnection> ConnectionPool::acquire(int sockfd, const sockad
     return conn;
 }
 
-void ConnectionPool::release(std::unique_ptr<HttpConnection> conn) {
+void HttpConnectionPool::release(std::unique_ptr<HttpConnection> conn) {
     if (!conn) {
         return;
     }
@@ -48,14 +48,7 @@ void ConnectionPool::release(std::unique_ptr<HttpConnection> conn) {
     m_in_use.fetch_sub(1);
 }
 
-//pop会销毁unique_ptr，自动调用析构函数
-// clear()
-//  └── while (!empty()) pop()
-//       └── stack.pop()
-//            └── destroys std::unique_ptr<HttpConnection>
-//                 └── ~unique_ptr()
-//                      └── delete ptr;  // 调用 ~HttpConnection()
-void ConnectionPool::clear() {
+void HttpConnectionPool::clear() {
     std::lock_guard<std::mutex> lock(m_mutex);
     
     // 清空所有空闲连接，让它们自然析构
@@ -63,5 +56,5 @@ void ConnectionPool::clear() {
         m_free_connections.pop();
     }
     
-    LOG_DEBUG("ConnectionPool cleared, remaining in_use: %zu", m_in_use.load());
+    LOG_DEBUG("HttpConnectionPool cleared, remaining in_use: %zu", m_in_use.load());
 }

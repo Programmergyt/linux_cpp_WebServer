@@ -7,17 +7,19 @@
 #include <atomic>
 #include <memory>
 #include <functional>
+#include <queue>          // for std::queue
+#include <sys/eventfd.h>  // for eventfd
 #include <unistd.h> // for pipe, close
 #include <netinet/in.h> // for sockaddr_in
 
-#include "../thread_pool/thread_pool.h"
+#include "../thread_pool/ThreadPool.h"
 #include "../http/HttpConnection.h"
-#include "../http/ConnectionPool.h"
-#include "../log/log.h"
-#include "../timer/timer.h"
-#include "../sql/sql_connection_pool.h"
-#include "../handler/handler.h"
-#include "../tools/tools.h" // 包含 Tools
+#include "../http/HttpConnectionPool.h"
+#include "../log/Log.h"
+#include "../timer/Timer.h"
+#include "../sql/SqlConnectionPool.h"
+#include "../handler/Handler.h"
+#include "../tools/Tools.h" // 包含 Tools
 
 const int SUB_MAX_EVENT_NUMBER = 10000;
 
@@ -36,7 +38,7 @@ public:
      * @param timeout_sec 超时时间
      * @param stop_flag 共享的服务器停止标志
      */
-    void init(thread_pool *pool, connection_pool *connPool, Router *router, 
+    void init(ThreadPool *pool, SqlConnectionPool *connPool, Router *router, 
               RequestContext *context, int timeout_sec, std::atomic<bool> *stop_flag);
 
     /**
@@ -50,6 +52,9 @@ public:
      */
     int getPipeFd() const;
 
+    // 用于工作线程向此 Reactor 提交任务
+    void addTask(std::function<void()> task);
+
 private:
     /**
      * @brief 处理来自 HttpConnection 的动作（读、写、关闭）
@@ -62,25 +67,34 @@ private:
      */
     void handle_new_connection(int connfd);
 
+    /**
+     * @brief 处理工作线程提交的唤醒事件
+     */
+    void handle_wakeup();
+
     int m_epollfd;
     int m_pipefd[2]; // 用于与主 Reactor 通信 [0]=读, [1]=写
     epoll_event events[SUB_MAX_EVENT_NUMBER];
 
     // 本 Reactor 负责的连接
     std::vector<std::shared_ptr<ManagedConnection>> m_connections;
-    std::mutex m_connections_mutex;
 
     // 定时器相关
-    timer_manager m_timer_manager;
+    TimerManager m_timer_manager;
     std::vector<client_data> m_client_data;
     int m_timeout_sec;
 
     // 共享资源（来自 WebServer）
-    thread_pool *m_pool;
-    connection_pool *m_connPool;
+    ThreadPool *m_pool;
+    SqlConnectionPool *m_connPool;
     Router *m_router;
     RequestContext *m_context;
     std::atomic<bool> *m_stop_server;
+
+    // 用于本Reactor的线程间通信的成员
+    int m_wakeup_fd;                     // 用于唤醒 epoll_wait 的 eventfd
+    std::queue<std::function<void()>> m_task_queue; // 任务队列
+    std::mutex m_task_mutex;             // 保护任务队列的互斥锁
 };
 
 #endif // SUB_REACTOR_H

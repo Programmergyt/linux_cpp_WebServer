@@ -1,5 +1,3 @@
-// HttpParser.cpp (C++17 兼容版)
-
 #include "http/HttpParser.h"
 #include <iostream>
 #include <sstream>

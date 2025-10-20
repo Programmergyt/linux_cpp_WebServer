@@ -6,11 +6,10 @@ int MAX_FD = 65536;
 SubReactor::SubReactor()
     : m_epollfd(-1), m_timeout_sec(15), m_pool(nullptr),
       m_connPool(nullptr), m_router(nullptr), m_context(nullptr),
-      m_stop_server(nullptr)
+      m_stop_server(nullptr),m_wakeup_fd(-1) // 新增：初始化 m_wakeup_fd
 {
     m_pipefd[0] = -1;
     m_pipefd[1] = -1;
-    // 调整容器大小以通过 fd 直接索引
     m_connections.resize(MAX_FD + 1);
     m_client_data.resize(MAX_FD + 1);
 }
@@ -30,12 +29,13 @@ SubReactor::~SubReactor()
     {
         close(m_pipefd[1]);
     }
+    if (m_wakeup_fd != -1) 
+    {
+        close(m_wakeup_fd);
+    }
 
     // 清理所有剩余的连接和定时器
-    {
-        std::lock_guard<std::mutex> lock(m_connections_mutex);
-        m_connections.clear();
-    }
+    m_connections.clear();
     
     for (auto& client : m_client_data) {
         if (client.timer && !client.timer_deleted) {
@@ -46,7 +46,7 @@ SubReactor::~SubReactor()
     }
 }
 
-void SubReactor::init(thread_pool *pool, connection_pool *connPool, Router *router,
+void SubReactor::init(ThreadPool *pool, SqlConnectionPool *connPool, Router *router,
                       RequestContext *context, int timeout_sec, std::atomic<bool> *stop_flag)
 {
     m_pool = pool;
@@ -74,6 +74,52 @@ void SubReactor::init(thread_pool *pool, connection_pool *connPool, Router *rout
     // 3. 设置管道读端为非阻塞，并加入 epoll (LT 模式)
     Tools::setnonblocking(m_pipefd[0]);
     Tools::addfd(m_epollfd, m_pipefd[0], false, 0); // LT 模式
+
+    // 4. 创建并注册 eventfd 用于线程间通信
+    m_wakeup_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    if (m_wakeup_fd < 0) {
+        LOG_ERROR("Failed to create eventfd");
+        std::cerr << "Failed to create eventfd" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    Tools::addfd(m_epollfd, m_wakeup_fd, false, 0); // 使用 LT 模式监听
+}
+
+void SubReactor::addTask(std::function<void()> task)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_task_mutex);
+        m_task_queue.push(std::move(task));
+    }
+    
+    // 唤醒 SubReactor 线程
+    uint64_t one = 1;
+    ssize_t n = write(m_wakeup_fd, &one, sizeof(one));
+    if (n != sizeof(one)) {
+        LOG_ERROR("write to m_wakeup_fd error");
+    }
+}
+
+void SubReactor::handle_wakeup()
+{
+    uint64_t one;
+    ssize_t n = read(m_wakeup_fd, &one, sizeof(one)); // 必须读，以清空 eventfd 计数器
+    if (n != sizeof(one)) {
+        LOG_ERROR("read from m_wakeup_fd error");
+    }
+
+    std::queue<std::function<void()>> tasks;
+    {
+        std::lock_guard<std::mutex> lock(m_task_mutex);
+        tasks.swap(m_task_queue); // 高效交换，减少锁的持有时间
+    }
+
+    while (!tasks.empty())
+    {
+        std::function<void()> task = tasks.front();
+        tasks.pop();
+        task(); // 在 SubReactor 线程中执行任务
+    }
 }
 
 int SubReactor::getPipeFd() const
@@ -84,7 +130,6 @@ int SubReactor::getPipeFd() const
 
 void SubReactor::handle_action(int connfd, HttpConnection::Action action)
 {
-    // 这个函数与旧 WebServer 中的实现完全相同
     switch (action)
     {
     case HttpConnection::Action::Read:
@@ -99,10 +144,7 @@ void SubReactor::handle_action(int connfd, HttpConnection::Action action)
     case HttpConnection::Action::Close:
         // 从 epoll 删除并关闭 fd
         Tools::del_timer(m_timer_manager, &m_client_data[connfd]);
-        {
-            std::lock_guard<std::mutex> lock(m_connections_mutex);
-            if (m_connections[connfd])m_connections[connfd].reset();
-        }
+        if (m_connections[connfd])m_connections[connfd].reset();
         Tools::removefd(m_epollfd, connfd); // 确保 fd 被关闭
         LOG_DEBUG("SubReactor: Connection closed by action: fd=%d", connfd);
         break;
@@ -122,24 +164,20 @@ void SubReactor::handle_new_connection(int connfd)
     // httpconnection 构造函数需要 sockaddr_in 参数，但实际上没有使用这个参数，所以传入一个空的 sockaddr_in
     sockaddr_in client_addr;
     bzero(&client_addr, sizeof(client_addr));
-    {
-        std::lock_guard<std::mutex> lock(m_connections_mutex);
-        m_connections[connfd] = std::make_shared<ManagedConnection>(connfd, client_addr, m_router, m_context);
-    }
+    m_connections[connfd] = std::make_shared<ManagedConnection>(connfd, client_addr, m_router, m_context);
 
-    // 3. 创建定时器回调函数
+    // 3. 创建定时器回调函数，回调函数在m_timer_manager.tick()时被调用，所以与连接关闭是同步的
     std::function<void(client_data *)> timeout_cb = [this](client_data *user_data)
     {
         if (user_data && user_data->sockfd >= 0 && !user_data->timer_deleted)
         {
-            user_data->timer_deleted = true; // 标记定时器已被删除
-            {
-                std::lock_guard<std::mutex> lock(m_connections_mutex);
-                if (m_connections[user_data->sockfd])m_connections[user_data->sockfd].reset();
-            }
-            Tools::removefd(m_epollfd, user_data->sockfd); // 从 epoll 删除并 close(fd)
-            LOG_DEBUG("SubReactor: Connection timeout and closed: fd=%d", user_data->sockfd);
-            user_data->timer = nullptr; // 清空指针
+            this->addTask([this, sockfd = user_data->sockfd]() {
+                LOG_DEBUG("SubReactor: Connection timeout, scheduling close action for fd=%d", sockfd);
+                if (m_connections[sockfd]) {
+                    // 调用标准的关闭流程
+                    handle_action(sockfd, HttpConnection::Action::Close);
+                }
+            });
         }
     };
 
@@ -198,27 +236,24 @@ void SubReactor::eventLoop()
                 }
                 if (*m_stop_server) break; // 跳出外层 for 循环
             }
-            // 2. 处理连接错误
+            // 2. 新增：处理来自工作线程的唤醒事件
+            else if (sockfd == m_wakeup_fd)
+            {
+                handle_wakeup();
+            }
+            // 3. 处理连接错误
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
-                LOG_DEBUG("SubReactor: Client disconnected (EPOLLERR/HUP): %d", sockfd);
-                // 删除定时器
-                Tools::del_timer(m_timer_manager, &m_client_data[sockfd]);
-                // 清理连接
-                {
-                    std::lock_guard<std::mutex> lock(m_connections_mutex);
-                    if (m_connections[sockfd])m_connections[sockfd].reset();
-                }
-                // 从 epoll 移除并关闭
-                Tools::removefd(m_epollfd, sockfd);
+                this->addTask([this, sockfd]() {
+                    handle_action(sockfd, HttpConnection::Action::Close);
+                });
             }
-            // 3. 处理读事件 (EPOLLIN)
+            // 4. 处理读事件 (EPOLLIN)
             else if (events[i].events & EPOLLIN)
             {
                 LOG_DEBUG("SubReactor: EPOLLIN event on fd %d", sockfd);
                 std::shared_ptr<ManagedConnection> conn_shared;
                 {
-                    std::lock_guard<std::mutex> lock(m_connections_mutex);
                     if (m_connections[sockfd]) {
                         conn_shared = m_connections[sockfd]; // 拷贝，引用计数+1
                     }
@@ -229,17 +264,18 @@ void SubReactor::eventLoop()
                     // 派发任务到工作线程池
                     m_pool->append([conn_shared, this, sockfd]() {
                         HttpConnection::Action action = conn_shared->get()->handle_read();
-                        handle_action(sockfd, action);
+                        this->addTask([this, sockfd, action]() {
+                            handle_action(sockfd, action);
+                        });
                     });
                 }
             }
-            // 4. 处理写事件 (EPOLLOUT)
+            // 5. 处理写事件 (EPOLLOUT)
             else if (events[i].events & EPOLLOUT)
             {
                 LOG_DEBUG("SubReactor: EPOLLOUT event on fd %d", sockfd);
                 std::shared_ptr<ManagedConnection> conn_shared;
                 {
-                    std::lock_guard<std::mutex> lock(m_connections_mutex);
                     if (m_connections[sockfd]) {
                         conn_shared = m_connections[sockfd]; // 拷贝
                     }
@@ -250,12 +286,14 @@ void SubReactor::eventLoop()
                     // 派发任务到工作线程池
                     m_pool->append([conn_shared, this, sockfd]() {
                         HttpConnection::Action action = conn_shared->get()->handle_write();
-                        handle_action(sockfd, action);
+                        this->addTask([this, sockfd, action]() {
+                            handle_action(sockfd, action);
+                        });
                     });
                 }
             }
-        } // end for
-    } // end while
+        } 
+    } 
 
     LOG_INFO("SubReactor shutting down...");
 }

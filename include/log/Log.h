@@ -5,7 +5,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include "block_queue.h"
+#include "BlockQueue.h"
 
 class Log
 {
@@ -53,7 +53,7 @@ private:
     int m_flush_interval = 1;   // 每写多少条日志就 flush 一次，默认 10
     int m_unflushed = 0;         // 已经写入但未 flush 的日志条数
     std::thread m_thread;
-    block_queue<std::string>* m_log_queue;
+    BlockQueue<std::string>* m_log_queue;
     std::mutex m_mutex;
     std::atomic<bool> m_exit;
     bool m_is_async;

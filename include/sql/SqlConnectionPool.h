@@ -10,11 +10,11 @@
 #include <string>
 #include <mutex>
 #include <condition_variable>
-#include "../log/log.h"
+#include "../log/Log.h"
 
 using namespace std;
 
-class connection_pool
+class SqlConnectionPool
 {
 public:
 	MYSQL *GetConnection();				 // 获取数据库连接
@@ -22,14 +22,25 @@ public:
 	int GetFreeConn();					 // 获取连接
 	void DestroyPool();					 // 销毁所有连接
 
-	// 单例模式
-	static connection_pool *GetInstance();
-
+	/**
+	 * @brief 获取数据库连接池实例
+	 */
+	static SqlConnectionPool *GetInstance();
+	/**
+	 * @brief 初始化数据库连接池
+	 * @param url 数据库主机地址
+	 * @param User 数据库用户名
+	 * @param PassWord 数据库密码
+	 * @param DataBaseName 数据库名称
+	 * @param Port 数据库端口号
+	 * @param MaxConn 最大连接数
+	 * @param close_log 日志开关
+	 */
 	void init(string url, string User, string PassWord, string DataBaseName, int Port, int MaxConn, int close_log);
 
 private:
-	connection_pool();
-	~connection_pool();
+	SqlConnectionPool();
+	~SqlConnectionPool();
 
 	int m_MaxConn;	// 最大连接数
 	int m_CurConn;	// 当前已使用的连接数
@@ -52,12 +63,12 @@ class connectionRAII
 {
 
 public:
-	connectionRAII(MYSQL **con, connection_pool *connPool);
+	connectionRAII(MYSQL **con, SqlConnectionPool *connPool);
 	~connectionRAII();
 
 private:
 	MYSQL *conRAII;
-	connection_pool *poolRAII;
+	SqlConnectionPool *poolRAII;
 };
 
 #endif
