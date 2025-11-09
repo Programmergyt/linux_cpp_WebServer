@@ -122,7 +122,10 @@ void WebServer::init(int port, string databaseURL, string user, string passWord,
     // API 路由
     m_router.add_route(HttpMethod::GET, "/api/test", handle_simple_json_get);
     m_router.add_route(HttpMethod::POST, "/api/register", handle_register);
-    m_router.add_route(HttpMethod::POST, "/api/login", handle_login);
+    m_router.add_route(HttpMethod::POST, "/api/auth/login", handle_login);
+    m_router.add_route(HttpMethod::GET, "/api/auth/validate_session", handle_validate_session);
+    m_router.add_route(HttpMethod::GET, "/api/auth/logout", handle_logout);
+    m_router.add_route(HttpMethod::GET, "/api/upgrade", handle_websocket_upgrade);
     // 静态文件路由 - 使用正则表达式匹配各种文件扩展名
     m_router.add_route(HttpMethod::GET, R"(/.*\.(html|htm|css|js|json|txt|xml|csv)$)", handle_static_file);
     m_router.add_route(HttpMethod::GET, R"(/.*\.(jpg|jpeg|png|gif|bmp|webp|svg|ico)$)", handle_static_file);
@@ -137,6 +140,7 @@ void WebServer::init(int port, string databaseURL, string user, string passWord,
 
     // 6. 初始化从 Reactors
     m_sub_reactor_num = std::thread::hardware_concurrency();
+    // m_sub_reactor_num = 1;
     if (m_sub_reactor_num <= 0) 
         m_sub_reactor_num = 8; // 备用
     
@@ -281,7 +285,7 @@ void WebServer::eventLoop()
                             }
                         case SIGALRM:
                             {
-                                LOG_DEBUG("MainReactor: Timer tick received. Forwarding to SubReactors.");
+                                // LOG_DEBUG("MainReactor: Timer tick received. Forwarding to SubReactors.");
                                 int tick_msg = -2; // -2 代表 Tick
                                 for (auto* sub : m_sub_reactors) {
                                     write(sub->getPipeFd(), &tick_msg, sizeof(tick_msg));

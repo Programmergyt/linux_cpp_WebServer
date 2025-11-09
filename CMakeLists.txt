@@ -22,6 +22,14 @@ endif()
 # ==========================
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
+# 查找 OpenSSL
+find_package(OpenSSL REQUIRED)
+if (OPENSSL_FOUND)
+    message(STATUS "Found OpenSSL version: ${OPENSSL_VERSION}")
+    message(STATUS "Include dir: ${OPENSSL_INCLUDE_DIR}")
+endif()
+
+include_directories(${OPENSSL_INCLUDE_DIR})
 # ==========================
 # 输出目录到项目根目录
 # ==========================
@@ -38,7 +46,7 @@ file(GLOB_RECURSE SRC_FILES
 
 # 主程序
 add_executable(web_server main.cpp ${SRC_FILES})
-target_link_libraries(web_server pthread mysqlclient)
+target_link_libraries(web_server pthread mysqlclient OpenSSL::SSL OpenSSL::Crypto)
 
 # # 测试程序
 # file(GLOB TEST_SRC
@@ -46,5 +54,5 @@ target_link_libraries(web_server pthread mysqlclient)
 # )
 # if (TEST_SRC)
 #     add_executable(test_server ${TEST_SRC} ${SRC_FILES})
-#     target_link_libraries(test_server pthread mysqlclient)
+#     target_link_libraries(test_server pthread mysqlclient OpenSSL::SSL OpenSSL::Crypto)
 # endif()

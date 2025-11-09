@@ -1,13 +1,29 @@
 #ifndef TOOLS_H
 #define TOOLS_H
 
+#include "../timer/Timer.h" // for TimerManager
 #include <string>
+#include <openssl/sha.h>   // for SHA1
+#include <openssl/evp.h>   // for base64 encode
+#include <openssl/bio.h>
+#include <openssl/buffer.h>
 #include <netinet/in.h>
-#include "../timer/Timer.h" // 假设路径
 #include <functional>     // for std::function
 #include <unordered_map>
+#include <random>
+#include <sstream>
 #include <algorithm>
 
+// 定义一个 Action 枚举，告知事件循环（WebServer）下一步该做什么
+enum class Action {
+    Read,       // 请为我注册 READ 事件
+    Write,      // 请为我注册 WRITE 事件
+    Close,      // 请关闭这个连接
+    Wait,        // Keep-alive 状态，等待下一个请求（注册 READ 事件）
+    Upgrade     // WebSocket 协议升级
+};
+
+// 前向声明
 struct util_timer;
 class TimerManager;
 
@@ -94,6 +110,17 @@ public:
      * @param cd 指向关联的客户端数据 (cd->timer 必须有效)
      */
     static void del_timer(TimerManager &tm, client_data *cd);
+
+    /**
+     * @brief 生成 Sec-WebSocket-Accept 响应头的值
+     * @param key 客户端发送的 Sec-WebSocket-Key
+     * @return 计算得到的 Sec-WebSocket-Accept 值
+     */
+    static std::string generate_accept_value(const std::string& key);
+
+    static std::string generate_session_id();
+
+    static std::string parse_cookie(const std::string& cookie, const std::string& key);
 
     static int *u_pipefd;   // 管道，用于信号通知,保存socket两端的两个文件描述符fd
 };

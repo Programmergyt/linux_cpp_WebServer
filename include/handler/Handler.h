@@ -24,8 +24,23 @@ HttpResponse handle_register(const HttpRequest& req, RequestContext& ctx);
 HttpResponse handle_login(const HttpRequest& req, RequestContext& ctx);
 
 /**
+ * @brief 处理登出请求的handler
+ */
+HttpResponse handle_logout(const HttpRequest& req, RequestContext& ctx);
+
+/**
+ * @brief 处理会话验证请求的handler
+ */
+HttpResponse handle_validate_session(const HttpRequest& req, RequestContext& ctx);
+
+/**
  * @brief 处理简单GET请求返回JSON的handler
  */
 HttpResponse handle_simple_json_get(const HttpRequest& req, RequestContext& ctx);
+
+/**
+ * @brief 处理WebSocket升级请求的handler
+ */
+HttpResponse handle_websocket_upgrade(const HttpRequest& req, RequestContext& ctx);
 
 #endif // HANDLER_H

@@ -7,12 +7,17 @@
 #include <vector>
 #include <regex>
 #include "../sql/SqlConnectionPool.h"
+#include "../thread_pool/ThreadPool.h"
 
 // 请求上下文，可以传递数据库连接池、配置等资源
 class RequestContext {
 public:
     SqlConnectionPool* db_pool;
     const char* doc_root;
+
+    // sessionId -> username映射表，用于websocket认证用户名
+    std::unordered_map<std::string, std::string> sessions;
+    std::mutex session_mtx;
 };
 
 // 定义一个处理请求的函数类型

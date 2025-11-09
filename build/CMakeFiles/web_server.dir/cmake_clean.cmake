@@ -33,6 +33,10 @@ file(REMOVE_RECURSE
   "CMakeFiles/web_server.dir/src/webserver/SubReactor.cpp.o.d"
   "CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.o"
   "CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.o.d"
+  "CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o"
+  "CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o.d"
+  "CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o"
+  "CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o.d"
 )
 
 # Per-language clean rules from dependency scanning.

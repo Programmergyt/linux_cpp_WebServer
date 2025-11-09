@@ -1,8 +1,12 @@
 #include "webserver/WebServer.h"
 #include "config/Config.h"
 
+#include <openssl/sha.h>
+#include <iostream>
+#include <iomanip>
+
 int main(int argc, char *argv[])
-{
+{    
     // 需要修改的数据库信息,登录名,密码,库名
     std::cout<<"服务器启动"<<std::endl;
     string databaseURL = "localhost";

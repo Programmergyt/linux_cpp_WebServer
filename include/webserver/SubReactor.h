@@ -20,6 +20,8 @@
 #include "../sql/SqlConnectionPool.h"
 #include "../handler/Handler.h"
 #include "../tools/Tools.h" // 包含 Tools
+#include "../websocket/WebSocketServer.h" // 新增：包含 WebSocketServer
+#include "../websocket/WebSocketConn.h"   // 新增：包含 WebSocketConn
 
 const int SUB_MAX_EVENT_NUMBER = 10000;
 
@@ -59,7 +61,7 @@ private:
     /**
      * @brief 处理来自 HttpConnection 的动作（读、写、关闭）
      */
-    void handle_action(int connfd, HttpConnection::Action action);
+    void handle_action(int connfd, Action action);
 
     /**
      * @brief 处理主 Reactor 分配的新连接
@@ -78,6 +80,9 @@ private:
 
     // 本 Reactor 负责的连接
     std::vector<std::shared_ptr<ManagedConnection>> m_connections;
+    
+    // WebSocket 连接管理（本地存储，但使用全局单例的 WebSocketServer）
+    std::vector<std::shared_ptr<WebSocketConn>> m_ws_connections;
 
     // 定时器相关
     TimerManager m_timer_manager;

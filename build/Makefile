@@ -513,6 +513,54 @@ src/webserver/WebServer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.s
 .PHONY : src/webserver/WebServer.cpp.s
 
+src/websocket/WebSocketConn.o: src/websocket/WebSocketConn.cpp.o
+.PHONY : src/websocket/WebSocketConn.o
+
+# target to build an object file
+src/websocket/WebSocketConn.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o
+.PHONY : src/websocket/WebSocketConn.cpp.o
+
+src/websocket/WebSocketConn.i: src/websocket/WebSocketConn.cpp.i
+.PHONY : src/websocket/WebSocketConn.i
+
+# target to preprocess a source file
+src/websocket/WebSocketConn.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.i
+.PHONY : src/websocket/WebSocketConn.cpp.i
+
+src/websocket/WebSocketConn.s: src/websocket/WebSocketConn.cpp.s
+.PHONY : src/websocket/WebSocketConn.s
+
+# target to generate assembly for a file
+src/websocket/WebSocketConn.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.s
+.PHONY : src/websocket/WebSocketConn.cpp.s
+
+src/websocket/WebSocketServer.o: src/websocket/WebSocketServer.cpp.o
+.PHONY : src/websocket/WebSocketServer.o
+
+# target to build an object file
+src/websocket/WebSocketServer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o
+.PHONY : src/websocket/WebSocketServer.cpp.o
+
+src/websocket/WebSocketServer.i: src/websocket/WebSocketServer.cpp.i
+.PHONY : src/websocket/WebSocketServer.i
+
+# target to preprocess a source file
+src/websocket/WebSocketServer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.i
+.PHONY : src/websocket/WebSocketServer.cpp.i
+
+src/websocket/WebSocketServer.s: src/websocket/WebSocketServer.cpp.s
+.PHONY : src/websocket/WebSocketServer.s
+
+# target to generate assembly for a file
+src/websocket/WebSocketServer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/web_server.dir/build.make CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.s
+.PHONY : src/websocket/WebSocketServer.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -570,6 +618,12 @@ help:
 	@echo "... src/webserver/WebServer.o"
 	@echo "... src/webserver/WebServer.i"
 	@echo "... src/webserver/WebServer.s"
+	@echo "... src/websocket/WebSocketConn.o"
+	@echo "... src/websocket/WebSocketConn.i"
+	@echo "... src/websocket/WebSocketConn.s"
+	@echo "... src/websocket/WebSocketServer.o"
+	@echo "... src/websocket/WebSocketServer.i"
+	@echo "... src/websocket/WebSocketServer.s"
 .PHONY : help
 
 

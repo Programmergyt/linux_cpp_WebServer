@@ -11,6 +11,7 @@ SubReactor::SubReactor()
     m_pipefd[0] = -1;
     m_pipefd[1] = -1;
     m_connections.resize(MAX_FD + 1);
+    m_ws_connections.resize(MAX_FD + 1);
     m_client_data.resize(MAX_FD + 1);
 }
 
@@ -36,6 +37,7 @@ SubReactor::~SubReactor()
 
     // 清理所有剩余的连接和定时器
     m_connections.clear();
+    m_ws_connections.clear();
     
     for (auto& client : m_client_data) {
         if (client.timer && !client.timer_deleted) {
@@ -55,6 +57,9 @@ void SubReactor::init(ThreadPool *pool, SqlConnectionPool *connPool, Router *rou
     m_context = context;
     m_timeout_sec = timeout_sec;
     m_stop_server = stop_flag;
+
+    // 设置 WebSocket 服务器上下文（单例模式）
+    WebSocketServer::getInstance().setContext(context);
 
     // 1. 创建自己的 epoll
     m_epollfd = epoll_create(5);
@@ -128,25 +133,57 @@ int SubReactor::getPipeFd() const
     return m_pipefd[1];
 }
 
-void SubReactor::handle_action(int connfd, HttpConnection::Action action)
+void SubReactor::handle_action(int connfd, Action action)
 {
+    // 判断是 WebSocket 还是 HTTP 连接
+    bool is_ws = WebSocketServer::getInstance().is_websocket_conn(connfd);
+    
     switch (action)
     {
-    case HttpConnection::Action::Read:
+    case Action::Read:
         Tools::modfd(m_epollfd, connfd, EPOLLIN, 1);
         break;
-    case HttpConnection::Action::Wait:
+    case Action::Wait:
         Tools::modfd(m_epollfd, connfd, EPOLLIN, 1);
         break;
-    case HttpConnection::Action::Write:
+    case Action::Write:
         Tools::modfd(m_epollfd, connfd, EPOLLOUT, 1);
         break;
-    case HttpConnection::Action::Close:
+    case Action::Close:
         // 从 epoll 删除并关闭 fd
-        Tools::del_timer(m_timer_manager, &m_client_data[connfd]);
-        if (m_connections[connfd])m_connections[connfd].reset();
+        if (is_ws) {
+            // WebSocket 连接
+            WebSocketServer::getInstance().removeConnection(connfd);
+            if (m_ws_connections[connfd]) {
+                m_ws_connections[connfd].reset();
+            }
+        } else {
+            // HTTP 连接
+            Tools::del_timer(m_timer_manager, &m_client_data[connfd]);
+            if (m_connections[connfd]) {
+                m_connections[connfd].reset();
+            }
+        }
         Tools::removefd(m_epollfd, connfd); // 确保 fd 被关闭
         LOG_DEBUG("SubReactor: Connection closed by action: fd=%d", connfd);
+        break;
+    case Action::Upgrade:
+        // HTTP 协议升级为 WebSocket
+        Tools::del_timer(m_timer_manager, &m_client_data[connfd]);
+        if (m_connections[connfd]) {
+            m_connections[connfd].reset();
+        }
+        // 创建 WebSocket 连接对象
+        m_ws_connections[connfd] = std::make_shared<WebSocketConn>(connfd, &WebSocketServer::getInstance(), m_context);
+        // 注册此 fd 的事件注册回调函数
+        WebSocketServer::getInstance().registerCallback(connfd, [this](int fd, Action action) {
+            this->addTask([this, fd, action]() {
+                this->handle_action(fd, action);
+            });
+        });
+        WebSocketServer::getInstance().addConnection(connfd, m_ws_connections[connfd]);
+        Tools::modfd(m_epollfd, connfd, EPOLLIN, 1);
+        LOG_DEBUG("SubReactor: Connection upgraded to WebSocket: fd=%d", connfd);
         break;
     default:
         LOG_ERROR("SubReactor: Unknown action for fd %d", connfd);
@@ -175,7 +212,7 @@ void SubReactor::handle_new_connection(int connfd)
                 LOG_DEBUG("SubReactor: Connection timeout, scheduling close action for fd=%d", sockfd);
                 if (m_connections[sockfd]) {
                     // 调用标准的关闭流程
-                    handle_action(sockfd, HttpConnection::Action::Close);
+                    handle_action(sockfd, Action::Close);
                 }
             });
         }
@@ -231,7 +268,7 @@ void SubReactor::eventLoop()
                     {
                         // 定时器 Tick 信号
                         m_timer_manager.tick();
-                        LOG_DEBUG("SubReactor: Timer tick executed");
+                        // LOG_DEBUG("SubReactor: Timer tick executed");
                     }
                 }
                 if (*m_stop_server) break; // 跳出外层 for 循环
@@ -245,51 +282,95 @@ void SubReactor::eventLoop()
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
                 this->addTask([this, sockfd]() {
-                    handle_action(sockfd, HttpConnection::Action::Close);
+                    handle_action(sockfd, Action::Close);
                 });
             }
             // 4. 处理读事件 (EPOLLIN)
             else if (events[i].events & EPOLLIN)
             {
                 LOG_DEBUG("SubReactor: EPOLLIN event on fd %d", sockfd);
-                std::shared_ptr<ManagedConnection> conn_shared;
-                {
-                    if (m_connections[sockfd]) {
-                        conn_shared = m_connections[sockfd]; // 拷贝，引用计数+1
+                
+                // 判断是 WebSocket 还是 HTTP 连接
+                if (WebSocketServer::getInstance().is_websocket_conn(sockfd)) {
+                    // WebSocket 连接
+                    std::shared_ptr<WebSocketConn> ws_conn;
+                    {
+                        if (m_ws_connections[sockfd]) {
+                            ws_conn = m_ws_connections[sockfd];
+                        }
                     }
-                }
-                if (conn_shared) {
-                    // 更新定时器
-                    Tools::adjust_timer(m_timer_manager, &m_client_data[sockfd], m_timeout_sec);
-                    // 派发任务到工作线程池
-                    m_pool->append([conn_shared, this, sockfd]() {
-                        HttpConnection::Action action = conn_shared->get()->handle_read();
-                        this->addTask([this, sockfd, action]() {
-                            handle_action(sockfd, action);
+                    if (ws_conn) {
+                        // 派发任务到工作线程池
+                        m_pool->append([ws_conn, this, sockfd]() {
+                            Action action = ws_conn->handle_read();
+                            this->addTask([this, sockfd, action]() {
+                                handle_action(sockfd, action);
+                            });
                         });
-                    });
+                    }
+                } else {
+                    // HTTP 连接
+                    std::shared_ptr<ManagedConnection> conn_shared;
+                    {
+                        if (m_connections[sockfd]) {
+                            conn_shared = m_connections[sockfd]; // 拷贝，引用计数+1
+                        }
+                    }
+                    if (conn_shared) {
+                        // 更新定时器
+                        Tools::adjust_timer(m_timer_manager, &m_client_data[sockfd], m_timeout_sec);
+                        // 派发任务到工作线程池
+                        m_pool->append([conn_shared, this, sockfd]() {
+                            Action action = conn_shared->get()->handle_read();
+                            this->addTask([this, sockfd, action]() {
+                                handle_action(sockfd, action);
+                            });
+                        });
+                    }
                 }
             }
             // 5. 处理写事件 (EPOLLOUT)
             else if (events[i].events & EPOLLOUT)
             {
                 LOG_DEBUG("SubReactor: EPOLLOUT event on fd %d", sockfd);
-                std::shared_ptr<ManagedConnection> conn_shared;
-                {
-                    if (m_connections[sockfd]) {
-                        conn_shared = m_connections[sockfd]; // 拷贝
+                
+                // 判断是 WebSocket 还是 HTTP 连接
+                if (WebSocketServer::getInstance().is_websocket_conn(sockfd)) {
+                    // WebSocket 连接
+                    std::shared_ptr<WebSocketConn> ws_conn;
+                    {
+                        if (m_ws_connections[sockfd]) {
+                            ws_conn = m_ws_connections[sockfd];
+                        }
                     }
-                }
-                if (conn_shared) {
-                    // 更新定时器
-                    Tools::adjust_timer(m_timer_manager, &m_client_data[sockfd], m_timeout_sec);
-                    // 派发任务到工作线程池
-                    m_pool->append([conn_shared, this, sockfd]() {
-                        HttpConnection::Action action = conn_shared->get()->handle_write();
-                        this->addTask([this, sockfd, action]() {
-                            handle_action(sockfd, action);
+                    if (ws_conn) {
+                        // 派发任务到工作线程池
+                        m_pool->append([ws_conn, this, sockfd]() {
+                            Action action = ws_conn->handle_write();
+                            this->addTask([this, sockfd, action]() {
+                                handle_action(sockfd, action);
+                            });
                         });
-                    });
+                    }
+                } else {
+                    // HTTP 连接
+                    std::shared_ptr<ManagedConnection> conn_shared;
+                    {
+                        if (m_connections[sockfd]) {
+                            conn_shared = m_connections[sockfd]; // 拷贝
+                        }
+                    }
+                    if (conn_shared) {
+                        // 更新定时器
+                        Tools::adjust_timer(m_timer_manager, &m_client_data[sockfd], m_timeout_sec);
+                        // 派发任务到工作线程池
+                        m_pool->append([conn_shared, this, sockfd]() {
+                            Action action = conn_shared->get()->handle_write();
+                            this->addTask([this, sockfd, action]() {
+                                handle_action(sockfd, action);
+                            });
+                        });
+                    }
                 }
             }
         } 

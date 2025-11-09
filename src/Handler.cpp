@@ -282,14 +282,99 @@ HttpResponse handle_login(const HttpRequest& req, RequestContext& ctx) {
                 response.body = R"({"status": "error", "msg": "用户名或密码错误"})";
             } else {
                 LOG_INFO("[SUCCESS] User logged in successfully: %s", username.c_str());
+                std::string session_id = Tools::generate_session_id();
+                {
+                    std::lock_guard<std::mutex> lock(ctx.session_mtx);
+                    ctx.sessions[session_id] = username;
+                }
+                LOG_INFO("[SUCCESS] User logged in successfully: %s (session=%s)",
+                username.c_str(), session_id.c_str());
                 response.status_code = 200;
                 response.status_text = "OK";
-                response.body = R"({"status": "ok", "msg": "登录成功"})";
+                response.set_header("Set-Cookie", "sessionId=" + session_id +
+                "; Path=/; HttpOnly; SameSite=Lax");
+                response.body = R"({"status":"ok","msg":"登录成功","sessionId":")" + session_id + R"("})";
             }
         }
     }
     
     return response;
+}
+
+/**
+ * @brief 处理会话验证请求的handler
+ */
+HttpResponse handle_validate_session(const HttpRequest& req, RequestContext& ctx) {
+    LOG_DEBUG("--- Handler: handle_validate_session called ---");
+
+    std::string cookie;
+    if (auto ck = req.get_header("Cookie"); ck.has_value()) {
+        cookie = std::string(*ck);
+    }
+    std::string session_id = Tools::parse_cookie(cookie, "sessionId");
+
+    LOG_INFO("[INFO] Validate session attempt: sessionId=%s", session_id.c_str());
+    if (session_id.empty()) {
+        return HttpResponse()
+            .with_status(401, "Unauthorized")
+            .with_header("Content-Type", "application/json")
+            .with_body(R"({"status":"error","msg":"未登录"})");
+    }
+
+    std::lock_guard<std::mutex> lock(ctx.session_mtx);
+    auto it = ctx.sessions.find(session_id);
+    if (it == ctx.sessions.end()) {
+        return HttpResponse()
+            .with_status(401, "Unauthorized")
+            .with_header("Content-Type", "application/json")
+            .with_body(R"({"status":"error","msg":"会话已失效"})");
+    }
+
+    std::string username = it->second;
+    std::string json = R"({"status":"ok","msg":"已登录","username":")" + username +
+                   R"(","sessionId":")" + session_id + R"("})";
+
+    return HttpResponse()
+        .with_status(200, "OK")
+        .with_header("Content-Type", "application/json")
+        .with_body(json);
+}
+
+/**
+ * @brief 处理用户登出请求的handler
+ */
+HttpResponse handle_logout(const HttpRequest& req, RequestContext& ctx) {
+    LOG_DEBUG("--- Handler: handle_logout called ---");
+
+    std::string cookie;
+    if (auto ck = req.get_header("Cookie"); ck.has_value()) {
+        cookie = std::string(*ck);
+    }
+    std::string session_id = Tools::parse_cookie(cookie, "sessionId");
+
+    if (session_id.empty()) {
+        return HttpResponse()
+            .with_status(400, "Bad Request")
+            .with_header("Content-Type", "application/json")
+            .with_body(R"({"status":"error","msg":"无效的会话"})");
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(ctx.session_mtx);
+        auto it = ctx.sessions.find(session_id);
+        if (it != ctx.sessions.end()) {
+            LOG_INFO("[LOGOUT] user=%s sessionId=%s", it->second.c_str(), session_id.c_str());
+            ctx.sessions.erase(it);
+        }
+    }
+
+    std::string json = R"({"status":"ok","msg":"登出成功"})";
+    return HttpResponse()
+        .with_status(200, "OK")
+        .with_header("Content-Type", "application/json")
+        .with_header("Set-Cookie", "sessionId=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax;")
+        .with_body(json);
+
 }
 
 /**
@@ -302,4 +387,39 @@ HttpResponse handle_simple_json_get(const HttpRequest& req, RequestContext& ctx)
         .with_status(200, "OK")
         .with_header("Content-Type", "application/json")
         .with_body(json_response);
+}
+
+/**
+ * @brief 处理WebSocket升级请求的handler
+ */
+HttpResponse handle_websocket_upgrade(const HttpRequest& req, RequestContext& ctx) {
+    LOG_DEBUG("--- Handler: handle_websocket_upgrade called ---");
+    if (req.method != HttpMethod::GET) {
+        return HttpResponse().with_status(405, "Method Not Allowed");
+    }
+
+    // 检查请求头
+    std::unordered_map<std::string, std::string> headers = req.headers;
+    if (headers.find("Upgrade") == headers.end() || strcasecmp(headers["Upgrade"].c_str(), "websocket") != 0)
+    {
+        return HttpResponse().with_status(400, "Bad Request");
+    }
+    if (headers.find("Sec-WebSocket-Key") == headers.end()) {
+        return HttpResponse().with_status(400, "Bad Request");
+    }
+    if (headers.find("Sec-WebSocket-Version") == headers.end() ||
+        headers["Sec-WebSocket-Version"] != "13") {
+        return HttpResponse().with_status(400, "Unsupported WebSocket Version");
+    }
+
+    // 生成Sec-WebSocket-Accept
+    std::string accept_key = headers["Sec-WebSocket-Key"];
+    std::string accept_value = Tools::generate_accept_value(accept_key);
+
+    // 构造101 Switching Protocols响应
+    return HttpResponse()
+        .with_status(101, "Switching Protocols")
+        .with_header("Upgrade", "websocket")
+        .with_header("Connection", "Upgrade")
+        .with_header("Sec-WebSocket-Accept", accept_value);
 }

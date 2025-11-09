@@ -50,3 +50,32 @@ std::string HttpRequest::get_boundary() const {
     }
     return boundary;
 }
+
+// ---------------------
+// 判断是否为 WebSocket 升级请求    
+// ---------------------
+bool HttpRequest::is_websocket_upgrade() const {
+    if (method != HttpMethod::GET) {
+        return false;
+    }
+
+    // 检查 Upgrade 头
+    auto it_upgrade = headers.find("Upgrade");
+    if (it_upgrade == headers.end() ||
+        strcasecmp(it_upgrade->second.c_str(), "websocket") != 0) {
+        return false;
+    }
+
+    // 检查 Sec-WebSocket-Key 头
+    if (headers.find("Sec-WebSocket-Key") == headers.end()) {
+        return false;
+    }
+
+    // 检查 Sec-WebSocket-Version 头
+    auto it_version = headers.find("Sec-WebSocket-Version");
+    if (it_version == headers.end() || it_version->second != "13") {
+        return false;
+    }
+
+    return true;
+}

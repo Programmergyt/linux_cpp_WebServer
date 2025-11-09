@@ -293,6 +293,34 @@ CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.s"
 	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /opt/my_server/src/webserver/WebServer.cpp -o CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.s
 
+CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o: CMakeFiles/web_server.dir/flags.make
+CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o: ../src/websocket/WebSocketConn.cpp
+CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o: CMakeFiles/web_server.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o"
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o -MF CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o.d -o CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o -c /opt/my_server/src/websocket/WebSocketConn.cpp
+
+CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.i"
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /opt/my_server/src/websocket/WebSocketConn.cpp > CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.i
+
+CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.s"
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /opt/my_server/src/websocket/WebSocketConn.cpp -o CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.s
+
+CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o: CMakeFiles/web_server.dir/flags.make
+CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o: ../src/websocket/WebSocketServer.cpp
+CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o: CMakeFiles/web_server.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o"
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o -MF CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o.d -o CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o -c /opt/my_server/src/websocket/WebSocketServer.cpp
+
+CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.i"
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /opt/my_server/src/websocket/WebSocketServer.cpp > CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.i
+
+CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.s"
+	/usr/bin/g++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /opt/my_server/src/websocket/WebSocketServer.cpp -o CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.s
+
 # Object files for target web_server
 web_server_OBJECTS = \
 "CMakeFiles/web_server.dir/main.cpp.o" \
@@ -310,7 +338,9 @@ web_server_OBJECTS = \
 "CMakeFiles/web_server.dir/src/http/HttpResponse.cpp.o" \
 "CMakeFiles/web_server.dir/src/http/Router.cpp.o" \
 "CMakeFiles/web_server.dir/src/webserver/SubReactor.cpp.o" \
-"CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.o"
+"CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.o" \
+"CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o" \
+"CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o"
 
 # External object files for target web_server
 web_server_EXTERNAL_OBJECTS =
@@ -331,9 +361,13 @@ web_server_EXTERNAL_OBJECTS =
 ../web_server: CMakeFiles/web_server.dir/src/http/Router.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/webserver/SubReactor.cpp.o
 ../web_server: CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.o
+../web_server: CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o
+../web_server: CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o
 ../web_server: CMakeFiles/web_server.dir/build.make
+../web_server: /usr/lib/x86_64-linux-gnu/libssl.so
+../web_server: /usr/lib/x86_64-linux-gnu/libcrypto.so
 ../web_server: CMakeFiles/web_server.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Linking CXX executable ../web_server"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/opt/my_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Linking CXX executable ../web_server"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/web_server.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

@@ -1,6 +1,5 @@
 #include "http/HttpConnection.h"
 #include "http/BufferPool.h"
-#include "tools/Tools.h"
 #include "log/Log.h"
 #include <sys/sendfile.h>
 #include <unistd.h>
@@ -29,7 +28,7 @@ HttpConnection::~HttpConnection() {
 }
 
 // 从socket读取数据并处理
-HttpConnection::Action HttpConnection::handle_read() {
+Action HttpConnection::handle_read() {
     const size_t READ_CHUNK_SIZE = 4096;
     ssize_t bytes_read = 0;
     
@@ -75,6 +74,9 @@ HttpConnection::Action HttpConnection::handle_read() {
         case HttpParser::ParseResult::Complete: {
             // 请求解析完成，处理请求
             const HttpRequest& request = m_parser.get_request();
+            // 判断是否是websocket升级
+            m_is_websocket = request.is_websocket_upgrade();
+            // 使用handler构建响应
             HttpResponse response = m_router->route_request(request, *m_context);
             
             // 准备响应
@@ -99,7 +101,7 @@ HttpConnection::Action HttpConnection::handle_read() {
 }
 
 // 向socket写入数据
-HttpConnection::Action HttpConnection::handle_write() {
+Action HttpConnection::handle_write() {
     if (!m_is_writing) {
         return Action::Read;
     }
@@ -199,8 +201,14 @@ HttpConnection::Action HttpConnection::handle_write() {
         reset_for_keep_alive();
         return Action::Wait;
     } else {
-        // 非Keep-Alive连接，关闭连接
-        return Action::Close;
+        // 非Keep-Alive连接，若为websocket升级则返回升级事件，否则直接关闭协议
+        if(m_is_websocket) {
+            m_is_websocket = false; // 重置状态
+            return Action::Upgrade;
+        }
+        else{
+            return Action::Close;
+        }    
     }
 }
 
@@ -315,6 +323,8 @@ void HttpConnection::reset_for_keep_alive() {
     m_iov_count = 0;
     m_bytes_to_send = 0;
     m_bytes_have_sent = 0;
+
+    m_is_websocket = false;
 }
 
 // 完全重置连接状态

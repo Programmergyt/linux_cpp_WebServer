@@ -250,4 +250,62 @@ void Tools::del_timer(TimerManager &tm, client_data *cd)
     }
 }
 
+/**
+ * @brief 生成 Sec-WebSocket-Accept 响应头的值
+ * @param key 客户端发送的 Sec-WebSocket-Key
+ * @return 计算得到的 Sec-WebSocket-Accept 值
+ */
+std::string Tools::generate_accept_value(const std::string& key) 
+{
+    static const std::string WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+    // 1. 拼接 GUID
+    std::string src = key + WS_GUID;
+
+    // 2. 计算 SHA-1
+    unsigned char sha1_result[SHA_DIGEST_LENGTH];
+    SHA1(reinterpret_cast<const unsigned char*>(src.c_str()), src.size(), sha1_result);
+
+    // 3. Base64 编码
+    BIO *b64 = BIO_new(BIO_f_base64());
+    BIO *mem = BIO_new(BIO_s_mem());
+    b64 = BIO_push(b64, mem);
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);  // 不换行
+    BIO_write(b64, sha1_result, SHA_DIGEST_LENGTH);
+    BIO_flush(b64);
+
+    BUF_MEM *bptr;
+    BIO_get_mem_ptr(b64, &bptr);
+    std::string encoded(bptr->data, bptr->length);
+
+    BIO_free_all(b64);
+
+    return encoded;
+}
+
+std::string Tools::generate_session_id()
+{
+    static const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    thread_local std::mt19937 rg(std::random_device{}());
+    thread_local std::uniform_int_distribution<> pick(0, sizeof(charset) - 2);
+    std::string s;
+    for (int i = 0; i < 32; i++) {
+        s += charset[pick(rg)];
+    }
+    return s;
+}
+
+std::string Tools::parse_cookie(const std::string& cookie, const std::string& key)
+{
+    std::string search = key + "=";
+    size_t pos = cookie.find(search);
+    if (pos == std::string::npos) return "";
+    size_t start = pos + search.size();
+    size_t end = cookie.find(';', start);
+    return cookie.substr(start, end - start);
+}
+
 int *Tools::u_pipefd = nullptr;

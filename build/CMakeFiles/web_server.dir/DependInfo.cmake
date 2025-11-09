@@ -24,6 +24,8 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/opt/my_server/src/http/Router.cpp" "CMakeFiles/web_server.dir/src/http/Router.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/http/Router.cpp.o.d"
   "/opt/my_server/src/webserver/SubReactor.cpp" "CMakeFiles/web_server.dir/src/webserver/SubReactor.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/webserver/SubReactor.cpp.o.d"
   "/opt/my_server/src/webserver/WebServer.cpp" "CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/webserver/WebServer.cpp.o.d"
+  "/opt/my_server/src/websocket/WebSocketConn.cpp" "CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/websocket/WebSocketConn.cpp.o.d"
+  "/opt/my_server/src/websocket/WebSocketServer.cpp" "CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o" "gcc" "CMakeFiles/web_server.dir/src/websocket/WebSocketServer.cpp.o.d"
   )
 
 # Targets to which this target links.

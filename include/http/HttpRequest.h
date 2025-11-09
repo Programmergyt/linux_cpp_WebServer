@@ -2,6 +2,7 @@
 #pragma once
 #include <string>
 #include <string_view>
+#include <cstring>
 #include <unordered_map>
 #include <optional>
 
@@ -42,4 +43,7 @@ public:
 
     // 工具方法：获取 boundary（仅当 multipart 时有效）
     std::string get_boundary() const;
+
+    // 工具方法：判断是否为 WebSocket 升级请求
+    bool is_websocket_upgrade() const;
 };

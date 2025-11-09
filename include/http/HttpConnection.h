@@ -1,6 +1,7 @@
 #pragma once
 #include "HttpParser.h"
 #include "Router.h"
+#include "../tools/Tools.h" // 包含 Action
 #include <vector>
 #include <sys/uio.h>
 #include <netinet/in.h>   // sockaddr_in, htons, htonl, INADDR_ANY 等
@@ -9,13 +10,6 @@
 
 class HttpConnection {
 public:
-    // 定义一个 Action 枚举，告知事件循环（WebServer）下一步该做什么
-    enum class Action {
-        Read,       // 请为我注册 READ 事件
-        Write,      // 请为我注册 WRITE 事件
-        Close,      // 请关闭这个连接
-        Wait        // Keep-alive 状态，等待下一个请求（注册 READ 事件）
-    };
 
     // 构造函数通过依赖注入接收它需要的组件
     HttpConnection(int sockfd, const sockaddr_in& addr, Router* router, RequestContext* context);
@@ -66,4 +60,7 @@ private:
     int m_iov_count = 0;
     size_t m_bytes_to_send = 0;
     size_t m_bytes_have_sent = 0;
+
+    // websocket协议升级相关
+    bool m_is_websocket = false;
 };
