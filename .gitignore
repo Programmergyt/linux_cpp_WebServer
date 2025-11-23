@@ -1,9 +1,15 @@
 # Ignore build and executable files
 web_server
 
+test_server
+
 # Ignore VS Code configuration files
 .vscode/
+
+build/
 
 root/assets/
 
 record/
+
+/test

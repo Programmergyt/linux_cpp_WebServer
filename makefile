@@ -1,30 +1,35 @@
+# ===============================
+# WebServer Makefile
+# 只编译 main.cpp + src/*.cpp，最终输出 web_server
+# ===============================
+
 CXX = g++
-CXXFLAGS = -Wall -std=c++11
+CXXFLAGS = -Wall -std=c++11 -O2
+INCLUDES = -I./include
+LIBS = -lpthread -lmysqlclient
 
-# Add a DEBUG variable. Set to 1 for debug mode, 0 for release mode.
-DEBUG = 0
-ifeq ($(DEBUG), 1)
-   CXXFLAGS += -g -O0
-else
-   CXXFLAGS += -O2
-endif
+TARGET = web_server
 
-server: main.cpp ./lock/locker.h ./log/block_queue.h ./log/log.cpp \
-./tools/tools.cpp  ./config/config.cpp ./timer/timer.cpp \
-./sql/sql_connection_pool.cpp ./thread_pool/thread_pool.cpp \
-./http/http_conn.cpp ./webserver/webserver.cpp
-	$(CXX) $(CXXFLAGS) -o web_server $^ -lpthread -lmysqlclient
+# ===============================
+# 编译目标
+# ===============================
+server:
+	@echo "Compiling and linking $(TARGET)..."
+	$(CXX) $(CXXFLAGS) $(INCLUDES) main.cpp src/*.cpp -o $(TARGET) $(LIBS)
+	@echo "✅ Build finished: ./$(TARGET)"
 
-test: test.cpp ./lock/locker.h ./log/block_queue.h ./log/log.cpp \
-./tools/tools.cpp  ./config/config.cpp ./timer/timer.cpp \
-./sql/sql_connection_pool.cpp ./thread_pool/thread_pool.cpp \
-./http/http_conn.cpp 
-	$(CXX) $(CXXFLAGS) -o test $^ -lpthread -lmysqlclient
+# ===============================
+# 运行 server
+# ===============================
+run: 
+	@echo "Running server..."
+	./$(TARGET) -m 1 -s 8 -t 8 -c 0 -a 1
 
-run: web_server
-	./web_server -m 1 -s 8 -t 8 -c 0 -a 1
-
+# ===============================
+# 清理
+# ===============================
 clean:
-	rm -f web_server test
+	@echo "Cleaning..."
+	rm -f $(TARGET)
 
-.PHONY: all run server clean
+.PHONY: server run clean
